@@ -1,18 +1,24 @@
+'''
+Definition for an RPC channel protocol on top of a websocket - enabling bi-directional request/response interactions
+'''
 import asyncio
 from inspect import _empty, getmembers, ismethod, signature
 from typing import Any, Dict
 
 from pydantic import ValidationError
 
-from ..logger import get_logger
-from ..utils import gen_uid
+from logging import getLogger
+from .utils import gen_uid
 from .rpc_methods import NoResponse, RpcMethodsBase
 from .schemas import RpcMessage, RpcRequest, RpcResponse
 
-logger = get_logger('RpcChannel')
+from .logger import get_logger
+logger = get_logger("RPC_CHANNEL")
+
 
 class UnknownMethodException(Exception):
     pass
+
 
 class RpcPromise:
     """
@@ -23,6 +29,7 @@ class RpcPromise:
     def __init__(self, request: RpcRequest):
         self._request = request
         self._id = request.call_id
+        # event used to wait for the completion of the request (upon receiving its matching response)
         self._event = asyncio.Event()
 
     @property
@@ -30,9 +37,15 @@ class RpcPromise:
         return self._id
 
     def set(self):
+        """
+        Signal compeltion of request with received response 
+        """
         self._event.set()
 
     def wait(self):
+        """
+        Wait on the internal event - triggered on response  
+        """
         return self._event.wait()
 
 
@@ -41,12 +54,15 @@ class RpcProxy:
     Helper class
     provide a __call__ interface for an RPC method over a given channel
     """
+
     def __init__(self, channel, method_name) -> None:
         self.method_name = method_name
         self.channel = channel
 
     def __call__(self, **kwds: Any) -> Any:
         return self.channel.call(self.method_name, args=kwds)
+
+
 class RpcCaller:
     """
     Helper class provide an object (aka other) with callable methods for each remote method on the otherside
@@ -54,13 +70,15 @@ class RpcCaller:
 
     def __init__(self, channel, methods=None) -> None:
         self._channel = channel
-        self._method_names = [method[0] for method in  getmembers(methods, lambda i: ismethod(i))] if methods is not None else None
+        self._method_names = [method[0] for method in getmembers(
+            methods, lambda i: ismethod(i))] if methods is not None else None
 
     def __getattribute__(self, name: str):
         if not name.startswith("_") and (self._method_names is None or name in self._method_names):
             return RpcProxy(self._channel, name)
         else:
             return super().__getattribute__(name)
+
 
 class RpcChannel:
     """
@@ -71,7 +89,7 @@ class RpcChannel:
     e.g. answer = channel.other.add(a=1,b=1) will (For example) ask the other side to perform 1+1 and will return an RPC-response of 2
     """
 
-    def __init__(self, methods:RpcMethodsBase, socket, channel_id=None, **kwargs):
+    def __init__(self, methods: RpcMethodsBase, socket, channel_id=None, **kwargs):
         """
 
         Args:
@@ -87,7 +105,7 @@ class RpcChannel:
         # Received responses
         self.responses = {}
         self.socket = socket
-        #Unique channel id
+        # Unique channel id
         self.id = channel_id if channel_id is not None else gen_uid()
         #
         # convineice caller
@@ -145,7 +163,7 @@ class RpcChannel:
         Args:
             message (RpcRequest): the RPC request with the method to call
         """
-        #TODO add exception support (catch exceptions and pass to other side as response with errors)
+        # TODO add exception support (catch exceptions and pass to other side as response with errors)
         logger.info("Handling RPC request", request=message.dict())
         method = getattr(self.methods, message.method)
         if callable(method):
@@ -201,4 +219,3 @@ class RpcChannel:
         """
         promise = await self.async_call(name, args)
         return await self.wait_for_response(promise)
-

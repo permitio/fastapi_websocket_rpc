@@ -6,12 +6,12 @@ from tenacity import retry, wait
 import websockets
 from pydantic import ValidationError
 
-from ..utils import gen_uid
+from .utils import gen_uid
 from .rpc_channel import RpcChannel
 from .schemas import RpcRequest, RpcResponse
-from ..logger import get_logger
+from .logger import get_logger
 
-logger = get_logger("WebSocketRpc")
+logger = get_logger("RPC_CLIENT") 
 
 class WebSocketRpcClient:
     """

@@ -6,7 +6,7 @@ import websockets
 from .connection_manager import ConnectionManager
 from .rpc_channel import RpcChannel
 from .rpc_methods import RpcMethodsBase
-from ..logger import get_logger
+from .logger import get_logger
 
 logger = get_logger("RPC_ENDPOINT") 
 
@@ -54,7 +54,7 @@ class WebsocketRPCEndpoint:
                     data = await websocket.receive_text()
                     await channel.on_message(data)
             except WebSocketDisconnect:
-                logger.error(f"Client disconnected - {websocket.client.port} :: {channel.id}")
+                logger.info(f"Client disconnected - {websocket.client.port} :: {channel.id}")
                 self.manager.disconnect(websocket)
                 await channel.on_disconnect()
         except: 

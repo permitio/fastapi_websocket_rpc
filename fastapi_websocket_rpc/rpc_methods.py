@@ -61,12 +61,12 @@ class RpcUtilityMethods(RpcMethodsBase):
     async def get_proccess_details(self) -> ProcessDetails:
         return ProcessDetails()
 
-    async def echo_method(self, method_name, args) -> bool:
+    async def echo_method(self, method_name="", args={}) -> bool:
         if self.channel is not None:
-            asyncio.create_task(self.channel.call(method_name, args))
+            asyncio.create_task(self.channel.call(method_name=method_name, **args))
             return True
         else:
             return False
-
+            
     async def echo(self, text: str) -> str:
         return text
