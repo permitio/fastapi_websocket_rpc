@@ -39,7 +39,6 @@ def setup_server():
     uvicorn.run(app, port=PORT )
 
 
-
 @pytest.fixture(scope="module")
 def server():
     # Run the server as a separate process
@@ -47,33 +46,6 @@ def server():
     proc.start()
     yield proc
     proc.kill() # Cleanup after test
-
-
-
-@pytest.mark.asyncio
-async def test_echo(server):
-    """
-    Test basic RPC with a simple echo
-    """
-    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4) as client:
-        text = "Hello World!"
-        response = await client.other.echo(text=text)
-        assert response.result == text
-
-@pytest.mark.asyncio
-async def test_structured_response(server):
-    """
-    Test RPC with structured (pydantic model) data response
-    Using process details as example data
-    """
-    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4) as client:
-        utils = RpcUtilityMethods()
-        ourProcess = await utils.get_proccess_details()
-        response = await client.other.get_proccess_details()
-        # The server is on another process
-        assert response.result["pid"] != ourProcess.pid
-        # We have all the details form the other process
-        assert "cmd" in response.result
 
 
 @pytest.mark.asyncio
