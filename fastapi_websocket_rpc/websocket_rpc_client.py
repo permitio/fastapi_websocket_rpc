@@ -20,7 +20,7 @@ class WebSocketRpcClient:
     Exposes methods that the server can call
     """
 
-    def __init__(self, uri, methods, retry_config=None, **kwargs):
+    def __init__(self, uri, methods, retry_config=None, default_response_timeout=None, **kwargs):
         """
         Args:
             uri (str): server uri to connect to (e.g. 'http://localhost/ws/client1')
@@ -48,6 +48,8 @@ class WebSocketRpcClient:
         self.responses = {}
         # Read worker
         self._read_task = None
+        #defaults
+        self.default_response_timeout = default_response_timeout
         # RPC channel
         self.channel = None
         self.retry_config = retry_config if retry_config is not None else {'wait': wait.wait_exponential()}
@@ -59,7 +61,7 @@ class WebSocketRpcClient:
         # Get socket
         self.ws = await self.conn.__aenter__()
         # Init an RPC channel to work on-top of the connection
-        self.channel = RpcChannel(self.methods, self.ws)
+        self.channel = RpcChannel(self.methods, self.ws, default_response_timeout=self.default_response_timeout)
         # Start reading incoming RPC calls
         self._read_task = asyncio.create_task(self.reader())
         return self
@@ -92,11 +94,14 @@ class WebSocketRpcClient:
         """
         await self._read_task
 
-    async def call(self, name, args={}):
+    async def call(self, name, args={}, timeout=None):
         """
         Call a method and wait for a response to be received
+         Args: 
+            name (str): name of the method to call on the other side (As defined on the otherside's RpcMethods object)
+            args (dict): keyword arguments to be passeds to otherside method
         """
-        return await self.channel.call(name, args)
+        return await self.channel.call(name, args, timeout=timeout)
 
     @property
     def other(self):

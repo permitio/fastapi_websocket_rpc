@@ -16,6 +16,8 @@ from .logger import get_logger
 logger = get_logger("RPC_CHANNEL")
 
 
+class DEAFULT_TIMEOUT:
+    pass
 class UnknownMethodException(Exception):
     pass
 
@@ -31,6 +33,10 @@ class RpcPromise:
         self._id = request.call_id
         # event used to wait for the completion of the request (upon receiving its matching response)
         self._event = asyncio.Event()
+
+    @property
+    def request(self):
+        return self._request     
 
     @property
     def call_id(self):
@@ -89,13 +95,14 @@ class RpcChannel:
     e.g. answer = channel.other.add(a=1,b=1) will (For example) ask the other side to perform 1+1 and will return an RPC-response of 2
     """
 
-    def __init__(self, methods: RpcMethodsBase, socket, channel_id=None, **kwargs):
+    def __init__(self, methods: RpcMethodsBase, socket, channel_id=None, default_response_timeout=None, **kwargs):
         """
 
         Args:
             methods (RpcMethodsBase): RPC methods to expose to other side
             socket: socket object providing simple send/recv methods
-            channel_id (str, optional): uuid for channel. Defaults to None in which case a rnadom UUID is generated.
+            channel_id (str, optional): uuid for channel. Defaults to None in which case a random UUID is generated.
+            default_response_timeout(int, optional) default timeout for RPC call responses. Defaults to None - i.e. no timeout
         """
         self.methods = methods.copy()
         # allow methods to access channel (for recursive calls - e.g. call me as a response for me calling you)
@@ -105,13 +112,18 @@ class RpcChannel:
         # Received responses
         self.responses = {}
         self.socket = socket
+        # timeout
+        self.default_response_timeout = default_response_timeout
         # Unique channel id
         self.id = channel_id if channel_id is not None else gen_uid()
         #
         # convineice caller
         # TODO - pass remote methods object to support validation before call
         self.other = RpcCaller(self)
+        # optional callbacks
         self._on_disconnect = None
+        self._on_error = None
+
         # any other kwarg goes straight to channel context (Accessible to methods)
         self._context = kwargs or {}
 
@@ -148,13 +160,21 @@ class RpcChannel:
                 await self.on_response(message.response)
         except ValidationError as e:
             logger.error(f"Failed to parse message", message=data, error=e)
+            self._on_error(e)
 
     def register_disconnect_handler(self, coro):
         self._on_disconnect = coro
 
+    def register_error_handler(self, coro):
+        self._on_error = coro
+
     async def on_disconnect(self):
         if self._on_disconnect is not None:
             return await self._on_disconnect(self.id)
+
+    async def on_error(self, error):
+        if self._on_error is not None:
+            return await self._on_error(self.id, error)
 
     async def on_request(self, message: RpcRequest):
         """
@@ -175,8 +195,18 @@ class RpcChannel:
                 if result_type is str and type(result) is not str:
                     result = str(result)
                 response = RpcMessage(response=RpcResponse[result_type](
-                    call_id=message.call_id, result=result, result_type=result_type.__name__))
+                    call_id=message.call_id, result=result, result_type=getattr(result_type, "__name__", getattr(result_type, "_name", "unknown-type"))))
                 await self.send(response.json())
+
+    def get_saved_promise(self, call_id):
+        return self.requests[call_id]
+
+    def get_saved_response(self, call_id):
+        return self.responses[call_id]
+
+    def clear_saved_call(self, call_id):
+        del self.requests[call_id]
+        del self.responses[call_id]
 
     async def on_response(self, response: RpcResponse):
         """
@@ -191,31 +221,43 @@ class RpcChannel:
             promise = self.requests[response.call_id]
             promise.set()
 
-    async def wait_for_response(self, promise):
+    async def wait_for_response(self, promise, timeout=DEAFULT_TIMEOUT) -> RpcResponse:
         """
         Wait on a previously made call
+        Args:
+            promise (RpcPromise): the awaitable-wrapper returned from the RPC request call
+            timeout (int, None, or DEAFULT_TIMEOUT): the timeout to wait on the response, defaults to DEAFULT_TIMEOUT.
+                - DEAFULT_TIMEOUT - use the value passed as 'default_response_timeout' in channel init
+                - None - no timeout
+                - a number - seconds to wait before timing out
         """
-        await promise.wait()
+        if timeout is DEAFULT_TIMEOUT:
+            timeout = self.default_response_timeout
+        await asyncio.wait_for(promise.wait(), timeout)
         response = self.responses[promise.call_id]
-        del self.requests[promise.call_id]
-        del self.responses[promise.call_id]
+        self.clear_saved_call(promise.call_id)
         return response
 
-    async def async_call(self, name, args={}):
+    async def async_call(self, name, args={}, call_id=None) -> RpcPromise:
         """
         Call a method and return the event and the sent message (including the chosen call_id)
         use self.wait_for_response on the event and call_id to get the return value of the call
+        Args:
+            name (str): name of the method to call on the other side
+            args (dict): keyword args to pass tot he other side
+            call_id (string, optional): a UUID to use to track the call () - override only with true UUIDs
         """
+        call_id = call_id or gen_uid()
         msg = RpcMessage(request=RpcRequest(
-            method=name, arguments=args, call_id=gen_uid()))
+            method=name, arguments=args, call_id=call_id))
         logger.info("Calling RPC method", message=msg.dict())
         await self.send(msg.json())
         promise = self.requests[msg.request.call_id] = RpcPromise(msg.request)
         return promise
 
-    async def call(self, name, args={}):
+    async def call(self, name, args={}, timeout=DEAFULT_TIMEOUT):
         """
         Call a method and wait for a response to be received
         """
         promise = await self.async_call(name, args)
-        return await self.wait_for_response(promise)
+        return await self.wait_for_response(promise, timeout=timeout)
