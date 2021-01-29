@@ -1,9 +1,9 @@
-aiohttp==3.7.2
+aiohttp>=3.7.2
 fastapi
 fastapi-utils
 pydantic
 starlette
 uvicorn
-requests==2.25.0
+requests>=2.25.0
 websockets
-tenacity==6.3.1
+tenacity>=6.3.1
