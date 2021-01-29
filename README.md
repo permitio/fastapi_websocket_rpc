@@ -1,7 +1,7 @@
 
 # ⚡ FAST-API Websocket RPC
 
-<a href="https://github.com/tiangolo/fastapi/actions?query=workflow%3ATests" target="_blank">
+<a href="https://github.com/acallasec/fastapi_websocket_rpc/actions?query=workflow%3ATests" target="_blank">
     <img src="https://github.com/acallasec/fastapi_websocket_rpc/workflows/Tests/badge.svg" alt="Tests">
 </a>
 
