@@ -1,14 +1,7 @@
-from starlette import responses
 import uvicorn
 from fastapi import APIRouter, FastAPI, Depends, Header, HTTPException, WebSocket
-
-from fastapi_websocket_rpc.logger import setDebugLogger
-
-setDebugLogger()
-
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
-
 
 
 async def get_token_header(x_token: str = Header(...)):
