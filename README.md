@@ -1,8 +1,97 @@
-# fastapi_websocket_rpc
-This library offers a websockets endpoint that allows two-way communication
-between a notifier and subscribers (pub sub model)
 
-## installation
+# ⚡ FAST-API Websocket RPC
+
+A fast and durable bidirectional JSON RPC channel over Websockets.
+The easiest way to create a live async channel between two nodes via Python.
+
+Both server and clients can easily expose Python methods that can be called by the other side.
+Method return values are sent back as RPC responses, which the other side can wait on.
+
+## Installation 🛠️
 ```
-python setup.py install
+pip install fastapi_websocket_rpc
 ```
+
+## RPC call example:
+
+Say the other side (server or client) exposes a "add" method, e.g. :
+```python
+class RpcCalculator(RpcMethodsBase):
+    async def add(self, a, b):
+        return a + b
+```
+Calling it is as easy as:
+```python
+response = await client.other.add(a=1,b=2)
+print(response.result) # 3
+```
+getting the response with the return value.
+
+
+
+
+## Usage example:
+
+### Server:
+```python
+import uvicorn
+from fastapi import FastAPI
+from fastapi_websocket_rpc import RpcMethodsBase, WebsocketRPCEndpoint
+
+# Methods to expose to the clients
+class ConcatServer(RpcMethodsBase):
+    async def concat(self, a="", b=""):
+        return a + b
+    
+# Init the FAST-API app
+app =  FastAPI()
+# Create an endpoint and load it with the methods to expose
+endpoint = WebsocketRPCEndpoint(ConcatServer())
+# add the endpoint to the app
+endpoint.register_route(app)
+
+# Start the server itself
+uvicorn.run(app, host="0.0.0.0", port=9000)
+```
+### Client
+```python
+import asyncio
+from fastapi_websocket_rpc import RpcMethodsBase, WebSocketRpcClient
+
+async def run_client(uri):
+    async with WebSocketRpcClient(uri, RpcMethodsBase()) as client:
+        # call concat on the other side
+        response = await client.other.concat(a="hello", b=" world")
+        # print result
+        print(response.result)  # will print "hello world"
+
+# run the client until it completes interaction with server
+asyncio.get_event_loop().run_until_complete(
+    run_client("ws://localhost:9000/ws")
+)
+```
+
+See the 'examples' and 'tests' folders for more server and client examples
+
+
+## What Can I do with this?
+Websockets are ideal to create bi-directional realtime connections over the web. 
+ - Push updates 
+ - Remote control mechanism 
+ - Pub / Sub (see fastapi_websocket_pubsub)
+ - Trigger events (see "tests/trigger_flow_test.py")
+ - Node negotiations (see "tests/advanced_rpc_test.py :: ")
+
+
+## Concepts
+- Based on [FAST-API](https://github.com/tiangolo/fastapi): enjoy all the benefits of a full ASGI platform, including Async-io and dependency injections (for example to authenticate connections)
+
+- Based on [Tenacity](https://tenacity.readthedocs.io/en/latest/index.html): allowing configurable retries to keep to connection alive
+
+- Based on [Pydnatic](https://pydantic-docs.helpmanual.io/): easily serialize structured data as part of RPC requests and responses (see 'tests/basic_rpc_test.py :: test_structured_response' fro an example)
+
+
+## Pull requests - welcome!
+- Please include tests for new features 
+
+
