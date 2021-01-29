@@ -1,16 +1,23 @@
 
 # ⚡ FAST-API Websocket RPC
 
+<a href="https://github.com/tiangolo/fastapi/actions?query=workflow%3ATests" target="_blank">
+    <img src="https://github.com/acallasec/fastapi_websocket_rpc/workflows/Tests/badge.svg" alt="Tests">
+</a>
+
+
 A fast and durable bidirectional JSON RPC channel over Websockets.
 The easiest way to create a live async channel between two nodes via Python.
 
 Both server and clients can easily expose Python methods that can be called by the other side.
 Method return values are sent back as RPC responses, which the other side can wait on.
 
+Supports and tested on Python >= 3.7 
 ## Installation 🛠️
 ```
 pip install fastapi_websocket_rpc
 ```
+
 
 ## RPC call example:
 
