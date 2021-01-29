@@ -1,17 +1,21 @@
 import asyncio
-import uuid
+from fastapi_websocket_rpc.rpc_methods import RpcMethodsBase
 from typing import Dict
 from tenacity import retry, wait
+from tenacity.retry import retry_if_exception
 
 import websockets
-from pydantic import ValidationError
+from websockets.exceptions import InvalidStatusCode
 
-from .utils import gen_uid
 from .rpc_channel import RpcChannel
-from .schemas import RpcRequest, RpcResponse
 from .logger import get_logger
 
-logger = get_logger("RPC_CLIENT") 
+logger = get_logger("RPC_CLIENT")
+
+
+def isNotInvalidStatusCode(value):
+    return not isinstance(value, InvalidStatusCode)
+
 
 class WebSocketRpcClient:
     """
@@ -20,7 +24,7 @@ class WebSocketRpcClient:
     Exposes methods that the server can call
     """
 
-    def __init__(self, uri, methods, retry_config=None, default_response_timeout=None, **kwargs):
+    def __init__(self, uri, methods=None, retry_config=None, default_response_timeout=None, **kwargs):
         """
         Args:
             uri (str): server uri to connect to (e.g. 'http://localhost/ws/client1')
@@ -34,7 +38,7 @@ class WebSocketRpcClient:
                 response = await client.call("echo", {'text': "Hello World!"})
                 print (response)
         """
-        self.methods = methods
+        self.methods = methods or RpcMethodsBase()
         self.connect_kwargs = kwargs
         # Websocket connection
         self.conn = None
@@ -48,11 +52,15 @@ class WebSocketRpcClient:
         self.responses = {}
         # Read worker
         self._read_task = None
-        #defaults
+        # defaults
         self.default_response_timeout = default_response_timeout
         # RPC channel
         self.channel = None
-        self.retry_config = retry_config if retry_config is not None else {'wait': wait.wait_exponential()}
+        self.retry_config = retry_config if retry_config is not None else {
+            'wait': wait.wait_exponential(),
+            'retry': retry_if_exception(isNotInvalidStatusCode),
+            'reraise': True
+        }
 
     async def __connect__(self):
         logger.info("Trying server", uri=self.uri)
