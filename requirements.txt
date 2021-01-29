@@ -1,6 +1,5 @@
 aiohttp>=3.7.2
 fastapi
-fastapi-utils
 pydantic
 starlette
 uvicorn

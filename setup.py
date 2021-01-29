@@ -8,8 +8,8 @@ def get_requirements(env=""):
 
 setup(
     name='fastapi_websocket_rpc',
-    version='0.1.0',
+    version='0.1.5',
     packages=find_packages(),
-    python_requires='>=3.8',
+    python_requires='>=3.6',
     install_requires=get_requirements(),
 )
