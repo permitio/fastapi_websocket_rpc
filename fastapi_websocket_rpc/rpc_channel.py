@@ -7,7 +7,6 @@ from typing import Any, Dict
 
 from pydantic import ValidationError
 
-from logging import getLogger
 from .utils import gen_uid
 from .rpc_methods import NoResponse, RpcMethodsBase
 from .schemas import RpcMessage, RpcRequest, RpcResponse
@@ -18,6 +17,8 @@ logger = get_logger("RPC_CHANNEL")
 
 class DEAFULT_TIMEOUT:
     pass
+
+
 class UnknownMethodException(Exception):
     pass
 
@@ -36,7 +37,7 @@ class RpcPromise:
 
     @property
     def request(self):
-        return self._request     
+        return self._request
 
     @property
     def call_id(self):
