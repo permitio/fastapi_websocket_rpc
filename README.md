@@ -81,14 +81,14 @@ asyncio.get_event_loop().run_until_complete(
 )
 ```
 
-See the [examples](./tree/master/examples) and [tests](./tree/master/tests) folders for more server and client examples
+See the [examples](../tree/master/examples) and [tests](../tree/master/tests) folders for more server and client examples
 
 
 ## Server calling client example:
 - Clients can call ```client.other.method()``` 
     - which is a shortcut for ```channel.channel.other.method()```
 - Servers also get the channel object and can call remote methods via ```channel.other.method()```
-- See the [bidirectional call example](./tree/master/examples/bidirectional_server_example.py) for calling client from server and server events (e.g. ```on_connect```).
+- See the [bidirectional call example](../tree/master/examples/bidirectional_server_example.py) for calling client from server and server events (e.g. ```on_connect```).
 
 
 ## What can I do with this?
@@ -101,12 +101,12 @@ Websockets are ideal to create bi-directional realtime connections over the web.
 
 
 ## Concepts
-- [RpcChannel](./tree/master/fastapi_websocket_rpc/rpc_channel.py) - implements the RPC-protocol over the websocket
+- [RpcChannel](../tree/master/fastapi_websocket_rpc/rpc_channel.py) - implements the RPC-protocol over the websocket
     - Sending RpcRequests per method call 
     - Creating promises to track them (via unique call ids), and allow waiting for responses 
     - Executing methods on the remote side and serializing return values as    
     - Receiving RpcResponses and delivering them to waiting callers
-- [RpcMethods](./tree/master/fastapi_websocket_rpc/rpc_methods.py) - classes passed to both client and server-endpoint inits to expose callable methods to the other side.
+- [RpcMethods](../tree/master/fastapi_websocket_rpc/rpc_methods.py) - classes passed to both client and server-endpoint inits to expose callable methods to the other side.
     - Simply derive from RpcMethodsBase and add your own async methods
     - Note currently only key-word arguments are supported
     - Checkout RpcUtilityMethods for example methods, which are also useful debugging utilities
