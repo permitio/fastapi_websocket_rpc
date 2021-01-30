@@ -29,6 +29,8 @@ class WebSocketRpcClient:
         Args:
             uri (str): server uri to connect to (e.g. 'http://localhost/ws/client1')
             methods (RpcMethodsBase): RPC methods to expose to the server
+            retry_config (dict): Tenacity.retry config (@see https://tenacity.readthedocs.io/en/latest/api.html#retry-main-api) 
+            default_response_timeout (float): default time in seconds
             **kwargs: Additional args passed to connect (@see class Connect at websockets/client.py)
                       https://websockets.readthedocs.io/en/stable/api.html#websockets.client.connect
 

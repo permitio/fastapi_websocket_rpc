@@ -15,9 +15,10 @@ endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
 
 @router.websocket("/ws/{client_id}")
 async def websocket_rpc_endpoint(websocket: WebSocket, client_id: str, token=Depends(get_token_header)):
+    # can add more startup code here
     await endpoint.main_loop(websocket)
 
 
 app.include_router(router, dependencies=[Depends(get_token_header)])
-uvicorn.run(app, host="0.0.0.0", port=8000, )
+uvicorn.run(app, host="0.0.0.0", port=8000)
 
