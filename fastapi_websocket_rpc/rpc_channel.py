@@ -161,12 +161,17 @@ class RpcChannel:
                 await self.on_response(message.response)
         except ValidationError as e:
             logger.error(f"Failed to parse message", message=data, error=e)
-            self._on_error(e)
+            self.on_error(e)
 
     def register_disconnect_handler(self, coro):
         self._on_disconnect = coro
 
     def register_error_handler(self, coro):
+        """
+        Register an error handler callback that will be called (As an async task)) with the triggered error. 
+        Args:
+            coro ([coroutine]): async callback
+        """
         self._on_error = coro
 
     async def on_disconnect(self):
