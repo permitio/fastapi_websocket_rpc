@@ -86,7 +86,7 @@ See the [examples](/examples) and [tests](/tests) folders for more server and cl
 
 ## Server calling client example:
 - Clients can call ```client.other.method()``` 
-    - which is a shortcut for ```channel.channel.other.method()```
+    - which is a shortcut for ```channel.other.method()```
 - Servers also get the channel object and can call remote methods via ```channel.other.method()```
 - See the [bidirectional call example](examples/bidirectional_server_example.py) for calling client from server and server events (e.g. ```on_connect```).
 
