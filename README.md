@@ -24,7 +24,7 @@ pip install fastapi_websocket_rpc
 
 ## RPC call example:
 
-Say the server exposes a "add" method, e.g. :
+Say the server exposes an "add" method, e.g. :
 ```python
 class RpcCalculator(RpcMethodsBase):
     async def add(self, a, b):
