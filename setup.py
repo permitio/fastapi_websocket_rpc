@@ -10,6 +10,6 @@ setup(
     name='fastapi_websocket_rpc',
     version='0.1.5',
     packages=find_packages(),
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=get_requirements(),
 )
