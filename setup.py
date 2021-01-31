@@ -6,10 +6,26 @@ def get_requirements(env=""):
     with open("requirements{}.txt".format(env)) as fp:
         return [x.strip() for x in fp.read().split("\n") if not x.startswith("#")]
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name='fastapi_websocket_rpc',
     version='0.1.5',
+    author='Or Weis',
+    author_email="or@authorizon.com",
+    description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",
+    long_description_content_type="text/markdown",
+    long_description=long_description,
+    url="https://github.com/authorizon/fastapi_websocket_rpc",
     packages=find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+        "Topic :: Internet :: WWW/HTTP :: WSGI"
+    ],    
     python_requires='>=3.7',
     install_requires=get_requirements(),
 )
