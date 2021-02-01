@@ -2,8 +2,8 @@
 # ⚡ FASTAPI Websocket RPC
 RPC over Websockets made easy, robust, and production ready
 
-<a href="https://github.com/acallasec/fastapi_websocket_rpc/actions?query=workflow%3ATests" target="_blank">
-    <img src="https://github.com/acallasec/fastapi_websocket_rpc/workflows/Tests/badge.svg" alt="Tests">
+<a href="https://github.com/authorizon/fastapi_websocket_rpc/actions?query=workflow%3ATests" target="_blank">
+    <img src="https://github.com/authorizon/fastapi_websocket_rpc/workflows/Tests/badge.svg" alt="Tests">
 </a>
 
 <a href="https://pypi.org/project/fastapi-websocket-rpc/" target="_blank">
