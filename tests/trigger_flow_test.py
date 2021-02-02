@@ -1,3 +1,7 @@
+"""
+ Test for the classic design pattern - where a client registers on the server to receive future events
+"""
+
 import os
 import sys
 
@@ -8,7 +12,7 @@ from fastapi_websocket_rpc.utils import gen_uid
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
 from fastapi_websocket_rpc.rpc_methods import RpcMethodsBase
-from fastapi import (APIRouter, Depends, FastAPI, Header, HTTPException,
+from fastapi import (APIRouter, FastAPI,
                      WebSocket)
 import uvicorn
 import pytest
@@ -39,7 +43,7 @@ class ServerMethods(RpcMethodsBase):
 def setup_server():
     app = FastAPI()
     router = APIRouter()
-    # expose calculator methods
+    # expose server methods
     endpoint = WebsocketRPCEndpoint(ServerMethods())
     # init the endpoint
 
