@@ -88,7 +88,6 @@ async def test_trigger_flow(server):
     Request the server to call us back later
     """
     async with WebSocketRpcClient(uri,
-                                  # we don't expose anything to the server
                                   ClientMethods(),
                                   default_response_timeout=4) as client:
         time_delta=0.5
