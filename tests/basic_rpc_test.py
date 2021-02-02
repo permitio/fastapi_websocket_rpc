@@ -21,21 +21,13 @@ from fastapi_websocket_rpc.utils import gen_uid
 
 # Configurable
 PORT = int(os.environ.get("PORT") or "9000")
-# Random ID
-CLIENT_ID = gen_uid()
-uri = f"ws://localhost:{PORT}/ws/{CLIENT_ID}"
+uri = f"ws://localhost:{PORT}/ws"
 
 
 def setup_server():
     app =  FastAPI()
-    router = APIRouter()
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
-
-    @router.websocket("/ws/{client_id}")
-    async def websocket_rpc_endpoint(websocket: WebSocket, client_id: str):
-        await endpoint.main_loop(websocket,client_id)
-
-    app.include_router(router)
+    endpoint.register_route(app)   
     uvicorn.run(app, port=PORT )
 
 
