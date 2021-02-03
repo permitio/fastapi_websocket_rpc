@@ -4,7 +4,7 @@ import sys
 # Add parent path to use local src as package for tests
 sys.path.append(os.path.abspath(os.path.join(os.path.basename(__file__), os.path.pardir)))
 
-import time 
+import logging 
 import asyncio
 from multiprocessing import Process
 
@@ -21,21 +21,13 @@ from fastapi_websocket_rpc.utils import gen_uid
 
 # Configurable
 PORT = int(os.environ.get("PORT") or "9000")
-# Random ID
-CLIENT_ID = gen_uid()
-uri = f"ws://localhost:{PORT}/ws/{CLIENT_ID}"
+uri = f"ws://localhost:{PORT}/ws"
 
 
 def setup_server():
     app =  FastAPI()
-    router = APIRouter()
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
-
-    @router.websocket("/ws/{client_id}")
-    async def websocket_rpc_endpoint(websocket: WebSocket, client_id: str):
-        await endpoint.main_loop(websocket,client_id)
-
-    app.include_router(router)
+    endpoint.register_route(app)   
     uvicorn.run(app, port=PORT )
 
 
@@ -56,6 +48,20 @@ async def test_echo(server):
         text = "Hello World!"
         response = await client.other.echo(text=text)
         assert response.result == text
+
+
+@pytest.mark.asyncio
+async def test_keep_alive(server):
+    """
+    Test basic RPC with a simple echo + keep alive in the background
+    """
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, keep_alive=0.1) as client:   
+        text = "Hello World!"
+        response = await client.other.echo(text=text)
+        assert response.result == text        
+        await asyncio.sleep(0.6)
+
+
 
 @pytest.mark.asyncio
 async def test_structured_response(server):
