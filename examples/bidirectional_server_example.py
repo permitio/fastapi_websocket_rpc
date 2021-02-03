@@ -22,7 +22,7 @@ async def on_connect(channel, websocket):
 # Init the FAST-API app
 app =  FastAPI()
 # Create an endpoint and load it with the methods to expose
-endpoint = WebsocketRPCEndpoint(ConcatServer(), on_connect=on_connect)
+endpoint = WebsocketRPCEndpoint(ConcatServer(), on_connect=[on_connect])
 # add the endpoint to the app
 endpoint.register_route(app)
 

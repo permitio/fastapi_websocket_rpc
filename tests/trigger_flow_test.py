@@ -99,3 +99,28 @@ async def test_trigger_flow(server):
         # Note: each channel has its own copy of the methods object
         assert client.channel.methods.name == name
         assert client.channel.methods.message == MESSAGE
+
+
+@pytest.mark.asyncio
+async def test_on_connect_trigger(server):
+    """
+    test cascading async trigger flow from client to sever and back staring with on_connect callback
+    """
+    time_delta=0.5
+    name = "Logan Nine Fingers"
+
+    async def on_connect(channel):
+        # Ask for a wake up call
+        await channel.other.register_wake_up_call(time_delta=time_delta, name=name)
+        # Wait for our wake-up call (or fail on timeout)
+
+
+    async with WebSocketRpcClient(uri,
+                                  ClientMethods(),
+                                  on_connect=[on_connect],
+                                  default_response_timeout=4) as client:
+        await asyncio.wait_for(client.methods.woke_up_event.wait(), 5)
+        # Note: each channel has its own copy of the methods object
+        assert client.channel.methods.name == name
+        assert client.channel.methods.message == MESSAGE
+
