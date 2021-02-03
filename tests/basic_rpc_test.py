@@ -4,7 +4,7 @@ import sys
 # Add parent path to use local src as package for tests
 sys.path.append(os.path.abspath(os.path.join(os.path.basename(__file__), os.path.pardir)))
 
-import time 
+import logging 
 import asyncio
 from multiprocessing import Process
 
@@ -48,6 +48,20 @@ async def test_echo(server):
         text = "Hello World!"
         response = await client.other.echo(text=text)
         assert response.result == text
+
+
+@pytest.mark.asyncio
+async def test_keep_alive(server):
+    """
+    Test basic RPC with a simple echo + keep alive in the background
+    """
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, keep_alive=0.1) as client:   
+        text = "Hello World!"
+        response = await client.other.echo(text=text)
+        assert response.result == text        
+        await asyncio.sleep(0.6)
+
+
 
 @pytest.mark.asyncio
 async def test_structured_response(server):

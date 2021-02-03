@@ -42,6 +42,7 @@ class WebsocketRPCEndpoint:
         """
         self.manager = manager if manager is not None else ConnectionManager()
         self.methods = methods if methods is not None else RpcMethodsBase()
+        # Event handlers
         self._on_disconnect = on_disconnect
         self._on_connect = on_connect
 
@@ -50,8 +51,11 @@ class WebsocketRPCEndpoint:
             await self.manager.connect(websocket)
             logger.info(f"Client connected", remote_address=websocket.client)
             channel = RpcChannel(self.methods, WebSocketSimplifier(websocket), **kwargs)
+            # register connect / disconnect handler
+            channel.register_connect_handler(self._on_connect)
             channel.register_disconnect_handler(self._on_disconnect)
-            await self.on_connect(channel, websocket)
+            # trigger connetc handlers
+            await channel.on_connect()
             try:
                 while True:
                     data = await websocket.receive_text()
@@ -70,7 +74,7 @@ class WebsocketRPCEndpoint:
             callback (function): callback to be called on each new client with the RpcChannel and the websocket
             Server spins the callback as a new task not waiting on it.
         """
-        self._on_connect = callback
+        self._on_connect.append(callback)
 
     async def on_connect(self, channel, websocket):
         """
@@ -80,7 +84,6 @@ class WebsocketRPCEndpoint:
         if (self._on_connect is not None):
             asyncio.create_task(self._on_connect(channel, websocket))
         
-
     def register_route(self, router, path="/ws"):
         """
         Register this endpoint as a default websocket route on the given router

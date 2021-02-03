@@ -11,6 +11,7 @@ from .connection_manager import ConnectionManager
 from .schemas import RpcRequest, RpcResponse
 from .utils import gen_uid
 
+PING_RESPONSE = "pong"
 
 # NULL default value - indicating no response was received
 class NoResponse:
@@ -22,12 +23,13 @@ class RpcMethodsBase:
     The basic interface RPC channels excpets method groups to implement.
      - create copy of the method object
      - set channel 
+     - provide '_ping_' for keep-alive
     """
 
     def __init__(self):
         self._channel = None
 
-    def set_channel(self, channel):
+    def _set_channel_(self, channel):
         """
         Allows the channel to share access to its functions to the methods once nested under it
         """
@@ -37,16 +39,21 @@ class RpcMethodsBase:
     def channel(self):
         return self._channel
 
-    def copy(self):
+    def _copy_(self):
         """ Simple copy ctor - overriding classes may need to override copy as well."""
         return copy.copy(self)
+
+    async def _ping_(self)->str:
+        """
+        built in ping for keep-alive
+        """
+        return PING_RESPONSE
 
 
 class ProcessDetails(BaseModel):
     pid: int = os.getpid()
     cmd: typing.List[str] = sys.argv
     workingdir: str = os.getcwd()
-
 
 class RpcUtilityMethods(RpcMethodsBase):
     """
