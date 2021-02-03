@@ -181,7 +181,7 @@ class RpcChannel:
             coros (List[Coroutine]): async callback
         """
         if coros is not None:        
-            self._disconnect_handlers.extends(coros)
+            self._disconnect_handlers.extend(coros)
 
     def register_error_handler(self, coros:List[Coroutine]=None):
         """
@@ -190,7 +190,7 @@ class RpcChannel:
             coros (List[Coroutine]): async callback
         """
         if coros is not None:
-            self._error_handlers.extends(coros)
+            self._error_handlers.extend(coros)
 
     async def on_handler_event(self, handlers, *args, **kwargs):
         await asyncio.gather(*(callback(*args, **kwargs) for callback in handlers))
