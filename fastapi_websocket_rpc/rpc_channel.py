@@ -3,7 +3,7 @@ Definition for an RPC channel protocol on top of a websocket - enabling bi-direc
 '''
 import asyncio
 from inspect import _empty, getmembers, ismethod, signature
-from typing import Any, Coroutine, Dict
+from typing import Any, Coroutine, Dict, List
 from asyncio.coroutines import coroutine
 
 from pydantic import ValidationError
@@ -165,32 +165,32 @@ class RpcChannel:
             logger.error(f"Failed to parse message", message=data, error=e)
             self.on_error(e)
 
-    def register_connect_handler(self, coro:Coroutine):
+    def register_connect_handler(self, coros:List[Coroutine]=None):
         """
         Register a connection handler callback that will be called (As an async task)) with the channel
         Args:
-            coro ([coroutine]): async callback
+            coros (List[Coroutine]): async callback
         """        
-        if coro is not None:
-            self._disconnect_handlers.append(coro)
+        if coros is not None:
+            self._connect_handlers.extend(coros)
 
-    def register_disconnect_handler(self, coro:Coroutine):
+    def register_disconnect_handler(self, coros:List[Coroutine]=None):
         """
         Register a disconnect handler callback that will be called (As an async task)) with the channel id 
         Args:
-            coro ([coroutine]): async callback
+            coros (List[Coroutine]): async callback
         """
-        if coro is not None:        
-            self._disconnect_handlers.append(coro)
+        if coros is not None:        
+            self._disconnect_handlers.extends(coros)
 
-    def register_error_handler(self, coro:Coroutine):
+    def register_error_handler(self, coros:List[Coroutine]=None):
         """
         Register an error handler callback that will be called (As an async task)) with the channel and triggered error. 
         Args:
-            coro ([coroutine]): async callback
+            coros (List[Coroutine]): async callback
         """
-        if coro is not None:
-            self._error_handlers = coro
+        if coros is not None:
+            self._error_handlers.extends(coros)
 
     async def on_handler_event(self, handlers, *args, **kwargs):
         await asyncio.gather(*(callback(*args, **kwargs) for callback in handlers))
@@ -199,7 +199,7 @@ class RpcChannel:
         await self.on_handler_event(self._connect_handlers, self)
 
     async def on_disconnect(self):
-        await self.on_handler_event(self._disconnect_handlers, self.id)
+        await self.on_handler_event(self._disconnect_handlers, self)
 
     async def on_error(self, error):
         await self.on_handler_event(self._error_handlers, self, error)

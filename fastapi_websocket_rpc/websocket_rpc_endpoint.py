@@ -1,4 +1,5 @@
 import asyncio
+from typing import Coroutine, List
 from fastapi import WebSocket, WebSocketDisconnect
 
 from .connection_manager import ConnectionManager
@@ -31,14 +32,17 @@ class WebsocketRPCEndpoint:
     A websocket RPC sever endpoint, exposing RPC methods
     """
 
-    def __init__(self, methods: RpcMethodsBase = None, manager: ConnectionManager = None, on_disconnect=None, on_connect=None):
+    def __init__(self, methods: RpcMethodsBase = None,
+                 manager: ConnectionManager = None,
+                 on_disconnect: List[Coroutine] = None,
+                 on_connect: List[Coroutine] = None):
         """[summary]
 
         Args:
             methods (RpcMethodsBase): RPC methods to expose
             manager ([ConnectionManager], optional): Connection tracking object. Defaults to None (i.e. new ConnectionManager()).
-            on_disconnect (coroutine, optional): Callback per disconnection 
-            on_connect(coroutine, optional): Callback per connection (Server spins the callback as a new task not waiting on it.)
+            on_disconnect (List[coroutine], optional): Callbacks per disconnection 
+            on_connect(List[coroutine], optional): Callbacks per connection (Server spins the callbacks as a new task, not waiting on it.)
         """
         self.manager = manager if manager is not None else ConnectionManager()
         self.methods = methods if methods is not None else RpcMethodsBase()
@@ -68,14 +72,6 @@ class WebsocketRPCEndpoint:
             logger.exception(f"Failed to serve - {websocket.client.port}")
             self.manager.disconnect(websocket)
 
-    def register_on_connect(self, callback):
-        """
-        Args:
-            callback (function): callback to be called on each new client with the RpcChannel and the websocket
-            Server spins the callback as a new task not waiting on it.
-        """
-        self._on_connect.append(callback)
-
     async def on_connect(self, channel, websocket):
         """
         Called upon new client connection 
@@ -83,7 +79,7 @@ class WebsocketRPCEndpoint:
         # Trigger connect callback if available
         if (self._on_connect is not None):
             asyncio.create_task(self._on_connect(channel, websocket))
-        
+
     def register_route(self, router, path="/ws"):
         """
         Register this endpoint as a default websocket route on the given router

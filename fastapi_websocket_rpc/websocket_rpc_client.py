@@ -1,5 +1,5 @@
 import asyncio
-from typing import Coroutine, Dict
+from typing import Coroutine, Dict, List
 from tenacity import retry, wait
 from tenacity.retry import retry_if_exception
 
@@ -30,12 +30,19 @@ class WebSocketRpcClient:
         'reraise': True
     }
 
-    def __init__(self, uri:str, methods: RpcMethodsBase = None, 
-                 retry_config=None, 
-                 default_response_timeout: float = None, 
-                 on_connect: Coroutine = None, 
-                 on_disconnect: Coroutine = None, 
-                 keep_alive: float = 0, 
+    # RPC ping check on successful Websocket connection
+    # @see wait_on_rpc_ready
+    # interval to try RPC-pinging the sever (Seconds)
+    WAIT_FOR_INITIAL_CONNECTION = 1
+    # How many times to try repinging before rejecting the entire connection
+    MAX_CONNECTION_ATTEMPTS = 5
+
+    def __init__(self, uri: str, methods: RpcMethodsBase = None,
+                 retry_config=None,
+                 default_response_timeout: float = None,
+                 on_connect: List[Coroutine] = None,
+                 on_disconnect: List[Coroutine] = None,
+                 keep_alive: float = 0,
                  **kwargs):
         """
         Args:
@@ -43,8 +50,9 @@ class WebSocketRpcClient:
             methods (RpcMethodsBase): RPC methods to expose to the server
             retry_config (dict): Tenacity.retry config (@see https://tenacity.readthedocs.io/en/latest/api.html#retry-main-api) 
             default_response_timeout (float): default time in seconds
-            on_connect (Coroutine): callback on connection being established
-            on_disconnect (Coroutine): callback on connection termination
+            on_connect (List[Coroutine]): callbacks on connection being established (each callback is called with the channel)
+                                          @note exceptions thrown in on_connect callbacks propagate to the client and will cause connection restart!
+            on_disconnect (List[Coroutine]): callbacks on connection termination (each callback is called with the channel)
             keep_alive(float): interval in seconds to send a keep-alive ping, Defaults to 0, which means keep alive is disabled.
 
             **kwargs: Additional args passed to connect (@see class Connect at websockets/client.py)
@@ -95,15 +103,15 @@ class WebSocketRpcClient:
         # register handlers
         self.channel.register_connect_handler(self._on_connect)
         self.channel.register_disconnect_handler(self._on_disconnect)
-        # trigger connect handlers
-        await self.channel.on_connect()
         # Start reading incoming RPC calls
         self._read_task = asyncio.create_task(self.reader())
         # start keep alive (if enabled i.e. value isn't 0)
         self._start_keep_alive_task()
+        # Wait for RPC channel on the server to be ready (ping check)
+        await self.wait_on_rpc_ready()
+        # trigger connect handlers
+        await self.channel.on_connect()
         return self
-             
-
 
     async def __aenter__(self):
         if self.retry_config is False:
@@ -142,9 +150,22 @@ class WebSocketRpcClient:
     async def _keep_alive(self):
         while True:
             await asyncio.sleep(self._keep_alive_interval)
-            logger.info("Pinging server")
-            answer = await self.channel.other._ping_()
+            answer = await self.ping()
             assert answer.result == PING_RESPONSE
+
+    async def wait_on_rpc_ready(self):
+        received_response = None
+        attempt_count = 0
+        while received_response is None and attempt_count < self.MAX_CONNECTION_ATTEMPTS:
+            try:
+                received_response = await asyncio.wait_for(self.ping(), self.WAIT_FOR_INITIAL_CONNECTION)
+            except TimeoutError:
+                attempt_count += 1
+
+    async def ping(self):
+        logger.info("Pinging server")
+        answer = await self.channel.other._ping_()
+        return answer
 
     def _cancel_keep_alive_task(self):
         if self._keep_alive_task is not None:
@@ -155,7 +176,7 @@ class WebSocketRpcClient:
     def _start_keep_alive_task(self):
         if self._keep_alive_interval > 0:
             logger.info("Starting keep alive task", interval=f"{self._keep_alive_interval} seconds")
-            self._keep_alive_task = asyncio.create_task(self._keep_alive())            
+            self._keep_alive_task = asyncio.create_task(self._keep_alive())
 
     async def wait_on_reader(self):
         """
