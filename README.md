@@ -132,7 +132,17 @@ Websockets are ideal to create bi-directional realtime connections over the web.
             - see WebSocketRpcClient.__init__'s retry_config 
         - Based on python [websockets](https://websockets.readthedocs.io/en/stable/intro.html) - a more comprehensive client than the one offered by Fast-api
 
+## Logging 
+fastapi-websocket-rpc provides a helper logging module to control how it produces logs for you.
+See [fastapi_websocket_rpc/logger.py](fastapi_websocket_rpc/logger.py).
+Use ```logging_config.set_mode``` or the 'WS_RPC_LOGGING' environment variable to choose the logging method you prefer or override completely via default logging config.
 
+example:
+```python
+# set RPC to log like UVICORN
+from fastapi_websocket_rpc.logger import logging_config, LoggingModes
+logging_config.set_mode(LoggingModes.UVICORN)
+```
 
 ## Pull requests - welcome!
 - Please include tests for new features 
