@@ -100,7 +100,7 @@ class WebSocketRpcClient:
         try:
             # Make sure we don't have any hanging tasks (from previous retry runs)
             self.cancel_tasks()
-            logger.info("Trying server", uri=self.uri)
+            logger.info(f"Trying server - {self.uri}")
             # Start connection
             self.conn = websockets.connect(self.uri, **self.connect_kwargs)
             # Get socket
@@ -210,7 +210,7 @@ class WebSocketRpcClient:
 
     def _start_keep_alive_task(self):
         if self._keep_alive_interval > 0:
-            logger.info("Starting keep alive task", interval=f"{self._keep_alive_interval} seconds")
+            logger.info(f"Starting keep alive task interval='{self._keep_alive_interval}' seconds")
             self._keep_alive_task = asyncio.create_task(self._keep_alive())
 
     async def wait_on_reader(self):

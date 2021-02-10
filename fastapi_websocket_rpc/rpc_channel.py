@@ -162,7 +162,7 @@ class RpcChannel:
             if message.response is not None:
                 await self.on_response(message.response)
         except ValidationError as e:
-            logger.error(f"Failed to parse message", message=data, error=e)
+            logger.error(f"Failed to parse message", {'message':data, 'error':e})
             self.on_error(e)
 
     def register_connect_handler(self, coros:List[Coroutine]=None):
@@ -213,7 +213,7 @@ class RpcChannel:
             message (RpcRequest): the RPC request with the method to call
         """
         # TODO add exception support (catch exceptions and pass to other side as response with errors)
-        logger.info("Handling RPC request", request=message.dict())
+        logger.info("Handling RPC request", {'request':message.dict()})
         method_name = message.method
         # Ignore "_" prefixed methods (except the built in "_ping_")
         if (isinstance(method_name, str) and (not method_name.startswith("_") or method_name == "_ping_")):
@@ -247,7 +247,7 @@ class RpcChannel:
         Args:
             response (RpcResponse): the received response
         """
-        logger.info("Handling RPC response", response=response.dict())
+        logger.info("Handling RPC response", {'response':response.dict()})
         if response.call_id is not None and response.call_id in self.requests:
             self.responses[response.call_id] = response
             promise = self.requests[response.call_id]
@@ -282,7 +282,7 @@ class RpcChannel:
         call_id = call_id or gen_uid()
         msg = RpcMessage(request=RpcRequest(
             method=name, arguments=args, call_id=call_id))
-        logger.info("Calling RPC method", message=msg.dict())
+        logger.info("Calling RPC method", {'message':msg.dict()})
         await self.send(msg.json())
         promise = self.requests[msg.request.call_id] = RpcPromise(msg.request)
         return promise
