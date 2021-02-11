@@ -119,6 +119,8 @@ class WebSocketRpcClient:
             # trigger connect handlers
             await self.channel.on_connect()
             return self
+        except ConnectionRefusedError:
+            logger.info("RPC connection was refused by server")
         except ConnectionClosedError:
             logger.info("RPC connection lost")
             raise
@@ -128,6 +130,9 @@ class WebSocketRpcClient:
         except WebSocketException as err:
             logger.info(f"RPC Websocket failed - with {err}")
             raise
+        except OSError as err:
+            logger.info("RPC Connection failed - %s", err)
+            raise        
         except Exception as err:
             logger.exception("RPC Error")
             raise
@@ -198,19 +203,19 @@ class WebSocketRpcClient:
                 attempt_count += 1
 
     async def ping(self):
-        logger.info("Pinging server")
+        logger.debug("Pinging server")
         answer = await self.channel.other._ping_()
         return answer
 
     def _cancel_keep_alive_task(self):
         if self._keep_alive_task is not None:
-            logger.info("Cancelling keep alive task")
+            logger.debug("Cancelling keep alive task")
             self._keep_alive_task.cancel()
             self._keep_alive_task = None
 
     def _start_keep_alive_task(self):
         if self._keep_alive_interval > 0:
-            logger.info(f"Starting keep alive task interval='{self._keep_alive_interval}' seconds")
+            logger.debug(f"Starting keep alive task interval='{self._keep_alive_interval}' seconds")
             self._keep_alive_task = asyncio.create_task(self._keep_alive())
 
     async def wait_on_reader(self):
