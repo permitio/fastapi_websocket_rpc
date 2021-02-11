@@ -63,7 +63,7 @@ class LoggingConfig:
             self.set_mode(mode)
         return self._mode
 
-    def set_mode(self, mode: LoggingMode = LoggingModes.UVICORN):
+    def set_mode(self, mode: LoggingMode = LoggingModes.UVICORN, level= logging.INFO):
         """
         Configure logging. this method calls 'logging.config.dictConfig()' to enable quick setup of logging.
         Call this method before starting the app.
@@ -76,7 +76,8 @@ class LoggingConfig:
         logging_config = self.config_template.copy()
         # add logs beside uvicorn
         if mode == LoggingModes.UVICORN:
-            logging_config["loggers"] = self.UVICORN_LOGGERS
+            logging_config["loggers"] = self.UVICORN_LOGGERS.copy()
+            logging_config["loggers"]["fastapi_ws_rpc"]["level"] = level
             dictConfig(logging_config)
         elif mode == LoggingModes.SIMPLE:
             pass
