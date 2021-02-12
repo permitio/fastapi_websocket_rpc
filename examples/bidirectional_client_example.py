@@ -4,7 +4,9 @@ builds on top of the simple example and adds- calls from the server to the clien
 """
 import asyncio
 from os import wait
-from fastapi_websocket_rpc import RpcMethodsBase, WebSocketRpcClient
+from fastapi_websocket_rpc import RpcMethodsBase, WebSocketRpcClient, logger
+# set fastapi-websocket-rpc logging to DEBUG
+logger.logging_config.set_mode(logger.LoggingModes.UVICORN, logger.logging.DEBUG)
 
 PORT = 9000
 
@@ -21,6 +23,7 @@ class WaitingClient(RpcMethodsBase):
     
     async def allow_queries(self):
         self.can_send_queries.set()
+        return None
     
     async def allow_exit(self, delay):
         async def allow():
