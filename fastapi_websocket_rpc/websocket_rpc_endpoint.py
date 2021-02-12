@@ -58,7 +58,7 @@ class WebsocketRPCEndpoint:
             # register connect / disconnect handler
             channel.register_connect_handler(self._on_connect)
             channel.register_disconnect_handler(self._on_disconnect)
-            # trigger connetc handlers
+            # trigger connect handlers
             await channel.on_connect()
             try:
                 while True:

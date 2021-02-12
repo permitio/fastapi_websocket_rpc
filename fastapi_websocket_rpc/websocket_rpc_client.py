@@ -144,6 +144,8 @@ class WebSocketRpcClient:
             return await retry(**self.retry_config)(self.__connect__)()
 
     async def __aexit__(self, *args, **kwargs):
+        # Close underlying connection
+        await self.ws.close()
         # notify handlers (if any)
         await self.channel.on_disconnect()
         # Clear tasks
@@ -199,7 +201,7 @@ class WebSocketRpcClient:
         while received_response is None and attempt_count < self.MAX_CONNECTION_ATTEMPTS:
             try:
                 received_response = await asyncio.wait_for(self.ping(), self.WAIT_FOR_INITIAL_CONNECTION)
-            except TimeoutError:
+            except asyncio.exceptions.TimeoutError:
                 attempt_count += 1
 
     async def ping(self):
