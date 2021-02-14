@@ -174,9 +174,6 @@ class WebSocketRpcClient:
                 raw_message = await self.ws.recv()
                 await self.channel.on_message(raw_message)
         # Graceful external termination options
-        # Connection closed on demand
-        except websockets.exceptions.ConnectionClosedOK:
-            pass
         # task was canceled
         except asyncio.CancelledError:
             pass
@@ -188,9 +185,6 @@ class WebSocketRpcClient:
                 answer = await self.ping()
                 assert answer.result == PING_RESPONSE
         # Graceful external termination options
-        # Connection closed on demand
-        except websockets.exceptions.ConnectionClosedOK:
-            pass
         # task was canceled
         except asyncio.CancelledError:
             pass
