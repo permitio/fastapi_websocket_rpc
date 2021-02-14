@@ -150,6 +150,9 @@ class RpcChannel:
         """
         return await self.socket.recv()
 
+    async def close(self):
+        return await self.socket.close()
+
     async def on_message(self, data):
         """
         Handle an incoming RPC message

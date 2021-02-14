@@ -26,8 +26,8 @@ class WebSocketSimplifier:
     def recv(self):
         return self.websocket.receive_text
 
-    def close(self, reason):
-        self.close(reason)
+    def close(self, code: int = 1000):
+        self.websocket.close(code)
 
 
 class WebsocketRPCEndpoint:

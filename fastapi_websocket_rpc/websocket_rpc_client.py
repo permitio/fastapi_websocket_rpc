@@ -144,16 +144,19 @@ class WebSocketRpcClient:
             return await retry(**self.retry_config)(self.__connect__)()
 
     async def __aexit__(self, *args, **kwargs):
+        await self.close()
+        # close context of underlying socket
+        if (hasattr(self.conn, "ws_client")):
+            await self.conn.__aexit__(*args, **kwargs)            
+
+    async def close(self):
         # Close underlying connection
         await self.ws.close()
         # notify handlers (if any)
         await self.channel.on_disconnect()
         # Clear tasks
         self.cancel_tasks()
-        # Stop socket
-        if (hasattr(self.conn, "ws_client")):
-            await self.conn.__aexit__(*args, **kwargs)
-
+    
     def cancel_tasks(self):
         # Stop keep alive if enabled
         self._cancel_keep_alive_task()
