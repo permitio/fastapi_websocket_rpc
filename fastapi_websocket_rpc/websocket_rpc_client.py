@@ -9,7 +9,7 @@ import websockets
 from websockets.exceptions import InvalidStatusCode, WebSocketException, ConnectionClosedError, ConnectionClosedOK
 
 from .rpc_methods import PING_RESPONSE, RpcMethodsBase
-from .rpc_channel import RpcChannel
+from .rpc_channel import RpcChannel, OnConnectCallback, OnDisconnectCallback
 from .logger import get_logger
 
 logger = get_logger("RPC_CLIENT")
@@ -46,8 +46,8 @@ class WebSocketRpcClient:
     def __init__(self, uri: str, methods: RpcMethodsBase = None,
                  retry_config=None,
                  default_response_timeout: float = None,
-                 on_connect: List[Coroutine] = None,
-                 on_disconnect: List[Coroutine] = None,
+                 on_connect: List[OnConnectCallback] = None,
+                 on_disconnect: List[OnDisconnectCallback] = None,
                  keep_alive: float = 0,
                  **kwargs):
         """
@@ -150,6 +150,7 @@ class WebSocketRpcClient:
             await self.conn.__aexit__(*args, **kwargs)            
 
     async def close(self):
+        logger.info("Closing RPC client")
         # Close underlying connection
         await self.ws.close()
         # notify handlers (if any)
@@ -180,6 +181,12 @@ class WebSocketRpcClient:
         # task was canceled
         except asyncio.CancelledError:
             pass
+        except websockets.exceptions.ConnectionClosed:
+            logger.info("Connection was terminated.")
+            await self.close()
+        except:
+            logger.exception("RPC Reader task failed")
+            raise
 
     async def _keep_alive(self):
         try:
