@@ -68,11 +68,19 @@ class WebsocketRPCEndpoint:
                     await channel.on_message(data)
             except WebSocketDisconnect:
                 logger.info(f"Client disconnected - {websocket.client.port} :: {channel.id}")
-                self.manager.disconnect(websocket)
-                await channel.on_disconnect()
+                await self.handle_disconnect(websocket, channel)
+            except:
+                # cover cases like - RuntimeError('Cannot call "send" once a close message has been sent.')
+                logger.info(f"Client connection failed - {websocket.client.port} :: {channel.id}")
+                await self.handle_disconnect(websocket, channel)
         except:
             logger.exception(f"Failed to serve - {websocket.client.port}")
             self.manager.disconnect(websocket)
+
+    async def handle_disconnect(self, websocket, channel):
+        self.manager.disconnect(websocket)
+        await channel.on_disconnect()
+            
 
     async def on_connect(self, channel, websocket):
         """
