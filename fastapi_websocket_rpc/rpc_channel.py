@@ -20,7 +20,16 @@ class DEAFULT_TIMEOUT:
     pass
 
 
-class UnknownMethodException(Exception):
+class RpcException(Exception):
+    pass
+
+class RpcChannelClosedException(Exception):
+    """
+    Raised when the channel is closed mid-operation
+    """
+    pass
+
+class UnknownMethodException(RpcException):
     pass
 
 
@@ -88,6 +97,17 @@ class RpcCaller:
             return super().__getattribute__(name)
 
 
+# Callback signatures 
+async def OnConnectCallback(channel):
+    pass
+
+async def OnDisconnectCallback(channel):
+    pass
+
+async def OnErrorCallback(channel, err:Exception):
+    pass
+
+
 class RpcChannel:
     """
     A wire agnostic json-rpc channel protocol for both server and client.
@@ -123,9 +143,11 @@ class RpcChannel:
         # TODO - pass remote methods object to support validation before call
         self.other = RpcCaller(self)
         # core event callback regsiters
-        self._connect_handlers = []
-        self._disconnect_handlers = []
+        self._connect_handlers:List[OnConnectCallback] = []
+        self._disconnect_handlers:List[OnDisconnectCallback] = []
         self._error_handlers = []
+        # internal event
+        self._closed = asyncio.Event()
 
         # any other kwarg goes straight to channel context (Accessible to methods)
         self._context = kwargs or {}
@@ -151,7 +173,10 @@ class RpcChannel:
         return await self.socket.recv()
 
     async def close(self):
-        return await self.socket.close()
+        res = await self.socket.close()
+        # signal closer
+        self._closed.set()
+        return res
 
     async def on_message(self, data):
         """
@@ -167,8 +192,12 @@ class RpcChannel:
         except ValidationError as e:
             logger.error(f"Failed to parse message", {'message':data, 'error':e})
             self.on_error(e)
+        except Exception as e:
+            self.on_error(e)
+            raise
 
-    def register_connect_handler(self, coros:List[Coroutine]=None):
+
+    def register_connect_handler(self, coros:List[OnConnectCallback]=None):
         """
         Register a connection handler callback that will be called (As an async task)) with the channel
         Args:
@@ -177,7 +206,7 @@ class RpcChannel:
         if coros is not None:
             self._connect_handlers.extend(coros)
 
-    def register_disconnect_handler(self, coros:List[Coroutine]=None):
+    def register_disconnect_handler(self, coros:List[OnDisconnectCallback]=None):
         """
         Register a disconnect handler callback that will be called (As an async task)) with the channel id 
         Args:
@@ -186,7 +215,7 @@ class RpcChannel:
         if coros is not None:        
             self._disconnect_handlers.extend(coros)
 
-    def register_error_handler(self, coros:List[Coroutine]=None):
+    def register_error_handler(self, coros:List[OnErrorCallback]=None):
         """
         Register an error handler callback that will be called (As an async task)) with the channel and triggered error. 
         Args:
@@ -202,9 +231,11 @@ class RpcChannel:
         await self.on_handler_event(self._connect_handlers, self)
 
     async def on_disconnect(self):
+        # disconnect happend - mark the channel as closed
+        self._closed.set()
         await self.on_handler_event(self._disconnect_handlers, self)
 
-    async def on_error(self, error):
+    async def on_error(self, error:Exception):
         await self.on_handler_event(self._error_handlers, self, error)
 
     async def on_request(self, message: RpcRequest):
@@ -265,11 +296,20 @@ class RpcChannel:
                 - DEAFULT_TIMEOUT - use the value passed as 'default_response_timeout' in channel init
                 - None - no timeout
                 - a number - seconds to wait before timing out
+        Raises:
+            asyncio.exceptions.TimeoutError - on timeout
+            RpcChannelClosedException - if the channel fails before wait could be completed
         """
         if timeout is DEAFULT_TIMEOUT:
             timeout = self.default_response_timeout
-        await asyncio.wait_for(promise.wait(), timeout)
-        response = self.responses[promise.call_id]
+        # wait for the promise or until the channel is terminated
+        for coro in asyncio.as_completed([promise.wait(), self._closed.wait()], timeout=timeout):
+            await coro
+            break
+        response = self.responses.get(promise.call_id, NoResponse)
+        # if the channel was closed before we could finish
+        if response is NoResponse:
+            raise RpcChannelClosedException(f"Channel Closed before RPC response for {promise.call_id} could be received")
         self.clear_saved_call(promise.call_id)
         return response
 
@@ -296,3 +336,7 @@ class RpcChannel:
         """
         promise = await self.async_call(name, args)
         return await self.wait_for_response(promise, timeout=timeout)
+
+
+
+
