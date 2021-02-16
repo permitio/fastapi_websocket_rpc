@@ -178,6 +178,12 @@ class RpcChannel:
         self._closed.set()
         return res
 
+    def isClosed(self):
+        return self._closed.is_set()
+    
+    async def wait_until_closed(self):
+        return await self._closed.wait()
+
     async def on_message(self, data):
         """
         Handle an incoming RPC message
@@ -191,9 +197,9 @@ class RpcChannel:
                 await self.on_response(message.response)
         except ValidationError as e:
             logger.error(f"Failed to parse message", {'message':data, 'error':e})
-            self.on_error(e)
+            await self.on_error(e)
         except Exception as e:
-            self.on_error(e)
+            await self.on_error(e)
             raise
 
 
