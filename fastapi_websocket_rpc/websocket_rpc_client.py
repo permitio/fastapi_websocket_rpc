@@ -155,8 +155,10 @@ class WebSocketRpcClient:
         # Close underlying connection
         if self.ws is not None:
             await self.ws.close()
-        # notify handlers (if any)
-        await self.channel.on_disconnect()
+        # Notify callbacks (but just once)
+        if not self.channel.isClosed():
+            # notify handlers (if any)
+            await self.channel.on_disconnect()
         # Clear tasks
         self.cancel_tasks()
     
@@ -185,6 +187,7 @@ class WebSocketRpcClient:
             pass
         except websockets.exceptions.ConnectionClosed:
             logger.info("Connection was terminated.")
+            await self.close()
         except:
             logger.exception("RPC Reader task failed")
             raise
