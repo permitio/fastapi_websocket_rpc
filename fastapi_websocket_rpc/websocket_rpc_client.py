@@ -121,6 +121,7 @@ class WebSocketRpcClient:
             return self
         except ConnectionRefusedError:
             logger.info("RPC connection was refused by server")
+            raise
         except ConnectionClosedError:
             logger.info("RPC connection lost")
             raise
@@ -152,7 +153,8 @@ class WebSocketRpcClient:
     async def close(self):
         logger.info("Closing RPC client")
         # Close underlying connection
-        await self.ws.close()
+        if self.ws is not None:
+            await self.ws.close()
         # notify handlers (if any)
         await self.channel.on_disconnect()
         # Clear tasks
@@ -183,7 +185,6 @@ class WebSocketRpcClient:
             pass
         except websockets.exceptions.ConnectionClosed:
             logger.info("Connection was terminated.")
-            await self.close()
         except:
             logger.exception("RPC Reader task failed")
             raise
