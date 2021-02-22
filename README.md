@@ -101,7 +101,7 @@ See the [examples](/examples) and [tests](/tests) folders for more server and cl
 Websockets are ideal to create bi-directional realtime connections over the web. 
  - Push updates 
  - Remote control mechanism 
- - Pub / Sub (see fastapi_websocket_pubsub)
+ - Pub / Sub (see [fastapi_websocket_pubsub](https://github.com/authorizon/fastapi_websocket_pubsub))
  - Trigger events (see "tests/trigger_flow_test.py")
  - Node negotiations (see "tests/advanced_rpc_test.py :: test_recursive_rpc_calls")
 
