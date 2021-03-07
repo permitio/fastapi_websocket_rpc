@@ -13,7 +13,7 @@ import os
 import sys
 
 # Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(os.path.basename(__file__), os.path.pardir)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
 
 # Configurable
