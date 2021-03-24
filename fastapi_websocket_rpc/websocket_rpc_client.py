@@ -232,12 +232,15 @@ class WebSocketRpcClient:
         """
         Join on the internal reader task
         """
-        await self._read_task
+        try:
+            await self._read_task
+        except asyncio.CancelledError:
+            logger.info(f"RPC Reader task was cancelled.")
 
     async def call(self, name, args={}, timeout=None):
         """
         Call a method and wait for a response to be received
-         Args: 
+         Args:
             name (str): name of the method to call on the other side (As defined on the otherside's RpcMethods object)
             args (dict): keyword arguments to be passeds to otherside method
         """
