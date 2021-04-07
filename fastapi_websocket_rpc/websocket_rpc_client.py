@@ -18,6 +18,13 @@ logger = get_logger("RPC_CLIENT")
 def isNotInvalidStatusCode(value):
     return not isinstance(value, InvalidStatusCode)
 
+def isNotForbbiden(value)->bool:
+    """
+    Returns:
+        bool: Returns True as long as the given exception value is not InvalidStatusCode with 401 or 403
+    """
+    return not (isinstance(value, InvalidStatusCode) and (value.status_code == 401 or value.status_code == 403))
+
 
 class WebSocketRpcClient:
     """
@@ -31,7 +38,7 @@ class WebSocketRpcClient:
 
     DEFAULT_RETRY_CONFIG = {
         'wait': wait.wait_random_exponential(),
-        'retry': retry_if_exception(isNotInvalidStatusCode),
+        'retry': retry_if_exception(isNotForbbiden),
         'reraise': True,
         "retry_error_callback":logerror
     }

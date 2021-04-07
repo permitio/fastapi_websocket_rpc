@@ -29,9 +29,9 @@ uri = f"ws://localhost:{PORT}/ws/{CLIENT_ID}"
 # A 'secret' to be checked by the server
 SECRET_TOKEN = "fake-super-secret-token"
 
-async def check_token_header(x_token: str = Header(...)):
+async def check_token_header(websocket:WebSocket, x_token: str = Header(...)):
     if x_token != SECRET_TOKEN:
-        raise HTTPException(status_code=400, detail="X-Token header invalid")
+        await websocket.close(403)
     return None
 
 
@@ -78,6 +78,4 @@ async def test_invalid_token(server):
             # if we got here - the server didn't reject us
             assert False
     except InvalidStatusCode as e:
-        # NOTE: currently UVICORN-asgi translates all websocket errors to 500; so we can't check for the actual
-        # https://github.com/encode/uvicorn/blob/61a6cabb4580e1c923df396eac264803f599412c/uvicorn/protocols/websockets/websockets_impl.py#L156-L183
-        assert e.status_code != 101
+        assert e.status_code == 403
