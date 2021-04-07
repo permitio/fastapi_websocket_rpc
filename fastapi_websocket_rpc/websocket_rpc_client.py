@@ -37,7 +37,7 @@ class WebSocketRpcClient:
         logger.exception(retry_state.outcome.exception())
 
     DEFAULT_RETRY_CONFIG = {
-        'wait': wait.wait_random_exponential(),
+        'wait': wait.wait_random_exponential(min=0.1, max=120),
         'retry': retry_if_exception(isNotForbbiden),
         'reraise': True,
         "retry_error_callback":logerror
@@ -134,6 +134,9 @@ class WebSocketRpcClient:
             raise
         except ConnectionClosedOK:
             logger.info("RPC connection closed")
+            raise
+        except InvalidStatusCode as err:
+            logger.info(f"RPC Websocket failed - with invalid status code {err.status_code}")
             raise
         except WebSocketException as err:
             logger.info(f"RPC Websocket failed - with {err}")
