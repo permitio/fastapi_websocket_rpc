@@ -16,7 +16,9 @@ RPC over Websockets made easy, robust, and production ready
     <img src="https://img.shields.io/pypi/v/fastapi-websocket-rpc?color=%2331C654&label=PyPi%20package" alt="Package">
 </a>
 
-
+<a href="https://pepy.tech/project/fastapi-websocket-rpc" target="_blank">
+    <img src="https://static.pepy.tech/personalized-badge/fastapi-websocket-rpc?period=total&units=international_system&left_color=black&right_color=blue&left_text=Downloads" alt="Downloads">
+</a>
 
 A fast and durable bidirectional JSON RPC channel over Websockets.
 The easiest way to create a live async channel between two nodes via Python (or other clients).
