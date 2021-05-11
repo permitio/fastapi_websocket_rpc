@@ -1,7 +1,7 @@
 aiohttp>=3.7.2
 fastapi
 pydantic
-starlette==0.13.6
+starlette>=0.13.6
 uvicorn
 requests>=2.25.0
 websockets
