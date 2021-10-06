@@ -1,0 +1,42 @@
+from typing import Any
+from abc import ABC, abstractmethod
+import json
+
+class SimpleWebsocket(ABC):
+    """
+    Abstract base class for all websocket related wrappers.
+    """
+    @abstractmethod
+    def send(self, msg):
+        pass
+
+    @abstractmethod
+    def recv(self):
+        pass
+
+    @abstractmethod
+    def close(self, code: int = 1000):
+        pass
+
+
+class JsonSerializingWebSocket(SimpleWebsocket):
+    def __init__(self, websocket: SimpleWebsocket):
+        self._websocket = websocket
+
+    def _serialize(self, msg):
+        return msg.json()
+
+    def _deserialize(self, buffer):
+        return json.loads(buffer)
+
+    async def send(self, msg):
+        await self._websocket.send(self._serialize(msg))
+
+    async def recv(self):
+        msg = await self._websocket.recv()
+
+        return self._deserialize(msg)
+
+    async def close(self, code: int = 1000):
+        await self._websocket.close(code)
+
