@@ -2,7 +2,7 @@ from typing import Any
 from abc import ABC, abstractmethod
 import json
 
-class SimpleWebsocket(ABC):
+class SimpleWebSocket(ABC):
     """
     Abstract base class for all websocket related wrappers.
     """
@@ -19,8 +19,8 @@ class SimpleWebsocket(ABC):
         pass
 
 
-class JsonSerializingWebSocket(SimpleWebsocket):
-    def __init__(self, websocket: SimpleWebsocket):
+class JsonSerializingWebSocket(SimpleWebSocket):
+    def __init__(self, websocket: SimpleWebSocket):
         self._websocket = websocket
 
     def _serialize(self, msg):
