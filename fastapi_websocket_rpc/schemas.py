@@ -1,4 +1,5 @@
 from typing import Dict, Generic, List, Optional, TypeVar
+from enum import Enum
 
 from pydantic import BaseModel
 from pydantic.generics import GenericModel
@@ -24,3 +25,8 @@ class RpcResponse(GenericModel, Generic[ResponseT]):
 class RpcMessage(BaseModel):
     request: Optional[RpcRequest] = None
     response: Optional[RpcResponse] = None
+
+
+class WebSocketFrameType(str, Enum):
+    Text = "text"
+    Binary = "binary"

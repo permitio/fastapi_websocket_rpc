@@ -190,7 +190,7 @@ class RpcChannel:
         This is the main function servers/clients using the channel need to call (upon reading a message on the wire)
         """
         try:
-            message = RpcMessage.parse_raw(data)
+            message = RpcMessage.parse_obj(data)
             if message.request is not None:
                 await self.on_request(message.request)
             if message.response is not None:
@@ -268,7 +268,7 @@ class RpcChannel:
                         result = str(result)
                     response = RpcMessage(response=RpcResponse[result_type](
                         call_id=message.call_id, result=result, result_type=getattr(result_type, "__name__", getattr(result_type, "_name", "unknown-type"))))
-                    await self.send(response.json())
+                    await self.send(response)
 
     def get_saved_promise(self, call_id):
         return self.requests[call_id]
@@ -332,7 +332,7 @@ class RpcChannel:
         msg = RpcMessage(request=RpcRequest(
             method=name, arguments=args, call_id=call_id))
         logger.debug("Calling RPC method - %s", {'message':msg})
-        await self.send(msg.json())
+        await self.send(msg)
         promise = self.requests[msg.request.call_id] = RpcPromise(msg.request)
         return promise
 

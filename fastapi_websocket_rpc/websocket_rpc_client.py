@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Coroutine, Dict, List
+from typing import Coroutine, Dict, List, Type
 from tenacity import retry, wait
 import tenacity
 from tenacity.retry import retry_if_exception
@@ -11,6 +11,7 @@ from websockets.exceptions import InvalidStatusCode, WebSocketException, Connect
 from .rpc_methods import PING_RESPONSE, RpcMethodsBase
 from .rpc_channel import RpcChannel, OnConnectCallback, OnDisconnectCallback
 from .logger import get_logger
+from .simplewebsocket import SimpleWebsocket, JsonSerializingWebSocket
 
 logger = get_logger("RPC_CLIENT")
 
@@ -56,6 +57,7 @@ class WebSocketRpcClient:
                  on_connect: List[OnConnectCallback] = None,
                  on_disconnect: List[OnDisconnectCallback] = None,
                  keep_alive: float = 0,
+                 serializing_socket_cls: Type[SimpleWebsocket] = JsonSerializingWebSocket,
                  **kwargs):
         """
         Args:
@@ -102,6 +104,8 @@ class WebSocketRpcClient:
         # Event handlers
         self._on_disconnect = on_disconnect
         self._on_connect = on_connect
+        # serialization
+        self._serializing_socket_cls = serializing_socket_cls
 
     async def __connect__(self):
         try:
@@ -110,8 +114,10 @@ class WebSocketRpcClient:
             logger.info(f"Trying server - {self.uri}")
             # Start connection
             self.conn = websockets.connect(self.uri, **self.connect_kwargs)
-            # Get socket
-            self.ws = await self.conn.__aenter__()
+            # Get socket and wrap in our serialization class
+            raw_ws = await self.conn.__aenter__()
+            self.ws = self._serializing_socket_cls(raw_ws)
+            # Wrap
             # Init an RPC channel to work on-top of the connection
             self.channel = RpcChannel(self.methods, self.ws, default_response_timeout=self.default_response_timeout)
             # register handlers
