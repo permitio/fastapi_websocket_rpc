@@ -18,7 +18,7 @@ from fastapi_websocket_rpc.logger import logging_config, LoggingModes
 from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 from fastapi_websocket_rpc.utils import gen_uid
-from fastapi_websocket_rpc.simplewebsocket import SimpleWebsocket
+from fastapi_websocket_rpc.simplewebsocket import SimpleWebSocket
 from fastapi_websocket_rpc import WebSocketFrameType
 
 #Set debug logs (and direct all logs to UVICORN format)
@@ -29,8 +29,8 @@ PORT = int(os.environ.get("PORT") or "9000")
 uri = f"ws://localhost:{PORT}/ws"
 
 
-class BinarySerializingWebSocket(SimpleWebsocket):
-    def __init__(self, websocket: SimpleWebsocket):
+class BinarySerializingWebSocket(SimpleWebSocket):
+    def __init__(self, websocket: SimpleWebSocket):
         self._websocket = websocket
 
     def _serialize(self, msg):

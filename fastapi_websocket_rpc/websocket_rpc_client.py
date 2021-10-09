@@ -11,7 +11,7 @@ from websockets.exceptions import InvalidStatusCode, WebSocketException, Connect
 from .rpc_methods import PING_RESPONSE, RpcMethodsBase
 from .rpc_channel import RpcChannel, OnConnectCallback, OnDisconnectCallback
 from .logger import get_logger
-from .simplewebsocket import SimpleWebsocket, JsonSerializingWebSocket
+from .simplewebsocket import SimpleWebSocket, JsonSerializingWebSocket
 
 logger = get_logger("RPC_CLIENT")
 
@@ -57,7 +57,7 @@ class WebSocketRpcClient:
                  on_connect: List[OnConnectCallback] = None,
                  on_disconnect: List[OnDisconnectCallback] = None,
                  keep_alive: float = 0,
-                 serializing_socket_cls: Type[SimpleWebsocket] = JsonSerializingWebSocket,
+                 serializing_socket_cls: Type[SimpleWebSocket] = JsonSerializingWebSocket,
                  **kwargs):
         """
         Args:

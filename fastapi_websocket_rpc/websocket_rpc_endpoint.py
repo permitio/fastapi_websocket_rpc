@@ -7,11 +7,11 @@ from .rpc_channel import RpcChannel
 from .rpc_methods import RpcMethodsBase
 from .logger import get_logger
 from .schemas import WebSocketFrameType
-from .simplewebsocket import SimpleWebsocket, JsonSerializingWebSocket
+from .simplewebsocket import SimpleWebSocket, JsonSerializingWebSocket
 
 logger = get_logger("RPC_ENDPOINT")
 
-class WebSocketSimplifier(SimpleWebsocket):
+class WebSocketSimplifier(SimpleWebSocket):
     """
     Simple warpper over FastAPI WebSocket to ensure unified interface for send/recv
     """
@@ -48,7 +48,7 @@ class WebsocketRPCEndpoint:
                  on_disconnect: List[Coroutine] = None,
                  on_connect: List[Coroutine] = None,
                  frame_type: WebSocketFrameType = WebSocketFrameType.Text,
-                 serializing_socket_cls: Type[SimpleWebsocket] = JsonSerializingWebSocket):
+                 serializing_socket_cls: Type[SimpleWebSocket] = JsonSerializingWebSocket):
         """[summary]
 
         Args:
