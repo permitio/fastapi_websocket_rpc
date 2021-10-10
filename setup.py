@@ -1,17 +1,19 @@
 from setuptools import setup, find_packages
 
+
 def get_requirements(env=""):
     if env:
         env = "-{}".format(env)
     with open("requirements{}.txt".format(env)) as fp:
         return [x.strip() for x in fp.read().split("\n") if not x.startswith("#")]
 
+
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name='fastapi_websocket_rpc',
-    version='0.1.19',
+    version='0.1.20',
     author='Or Weis',
     author_email="or@authorizon.com",
     description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",
@@ -25,7 +27,7 @@ setup(
         "Operating System :: OS Independent",
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Internet :: WWW/HTTP :: WSGI"
-    ],    
+    ],
     python_requires='>=3.7',
     install_requires=get_requirements(),
 )
