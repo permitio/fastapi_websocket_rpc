@@ -9,7 +9,7 @@ from asyncio.coroutines import coroutine
 from pydantic import ValidationError
 
 from .utils import gen_uid
-from .rpc_methods import NoResponse, RpcMethodsBase
+from .rpc_methods import EXPOSED_BUILT_IN_METHODS, NoResponse, RpcMethodsBase
 from .schemas import RpcMessage, RpcRequest, RpcResponse
 
 from .logger import get_logger
@@ -55,13 +55,13 @@ class RpcPromise:
 
     def set(self):
         """
-        Signal compeltion of request with received response 
+        Signal compeltion of request with received response
         """
         self._event.set()
 
     def wait(self):
         """
-        Wait on the internal event - triggered on response  
+        Wait on the internal event - triggered on response
         """
         return self._event.wait()
 
@@ -90,14 +90,15 @@ class RpcCaller:
         self._method_names = [method[0] for method in getmembers(
             methods, lambda i: ismethod(i))] if methods is not None else None
 
+
     def __getattribute__(self, name: str):
-        if (not name.startswith("_") or name == "_ping_") and (self._method_names is None or name in self._method_names):
+        if (not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS) and (self._method_names is None or name in self._method_names):
             return RpcProxy(self._channel, name)
         else:
             return super().__getattribute__(name)
 
 
-# Callback signatures 
+# Callback signatures
 async def OnConnectCallback(channel):
     pass
 
@@ -117,7 +118,7 @@ class RpcChannel:
     e.g. answer = channel.other.add(a=1,b=1) will (For example) ask the other side to perform 1+1 and will return an RPC-response of 2
     """
 
-    def __init__(self, methods: RpcMethodsBase, socket, channel_id=None, default_response_timeout=None, **kwargs):
+    def __init__(self, methods: RpcMethodsBase, socket, channel_id=None, default_response_timeout=None, sync_channel_id=False, **kwargs):
         """
 
         Args:
@@ -125,6 +126,8 @@ class RpcChannel:
             socket: socket object providing simple send/recv methods
             channel_id (str, optional): uuid for channel. Defaults to None in which case a random UUID is generated.
             default_response_timeout(int, optional) default timeout for RPC call responses. Defaults to None - i.e. no timeout
+            sync_channel_id(bool, optional) should get the other side of the channel id, helps to identify connections, cost a bit networking time.
+                Defaults to False - i.e. not getting the other side channel id
         """
         self.methods = methods._copy_()
         # allow methods to access channel (for recursive calls - e.g. call me as a response for me calling you)
@@ -138,6 +141,12 @@ class RpcChannel:
         self.default_response_timeout = default_response_timeout
         # Unique channel id
         self.id = channel_id if channel_id is not None else gen_uid()
+        # should get remote channel id
+        self._sync_channel_id = sync_channel_id
+        # other side of the channel id if sync_channel_id is True
+        self._other_channel_id = None
+        # asyncio event to check if we got other channel id
+        self._channel_id_synced = asyncio.Event()
         #
         # convineice caller
         # TODO - pass remote methods object to support validation before call
@@ -155,6 +164,10 @@ class RpcChannel:
     @property
     def context(self) -> Dict[str, Any]:
         return self._context
+
+    async def get_other_channel_id(self) -> str:
+        asyncio.wait_for(self._channel_id_synced.wait(), DEAFULT_TIMEOUT)
+        return self._other_channel_id
 
     def get_return_type(self, method):
         method_signature = signature(method)
@@ -180,7 +193,7 @@ class RpcChannel:
 
     def isClosed(self):
         return self._closed.is_set()
-    
+
     async def wait_until_closed(self):
         return await self._closed.wait()
 
@@ -208,22 +221,22 @@ class RpcChannel:
         Register a connection handler callback that will be called (As an async task)) with the channel
         Args:
             coros (List[Coroutine]): async callback
-        """        
+        """
         if coros is not None:
             self._connect_handlers.extend(coros)
 
     def register_disconnect_handler(self, coros:List[OnDisconnectCallback]=None):
         """
-        Register a disconnect handler callback that will be called (As an async task)) with the channel id 
+        Register a disconnect handler callback that will be called (As an async task)) with the channel id
         Args:
             coros (List[Coroutine]): async callback
         """
-        if coros is not None:        
+        if coros is not None:
             self._disconnect_handlers.extend(coros)
 
     def register_error_handler(self, coros:List[OnErrorCallback]=None):
         """
-        Register an error handler callback that will be called (As an async task)) with the channel and triggered error. 
+        Register an error handler callback that will be called (As an async task)) with the channel and triggered error.
         Args:
             coros (List[Coroutine]): async callback
         """
@@ -234,7 +247,23 @@ class RpcChannel:
         await asyncio.gather(*(callback(*args, **kwargs) for callback in handlers))
 
     async def on_connect(self):
+        '''
+        Run get other channel id if sync_channel_id is True
+        Run all callbacks from self._connect_handlers
+        '''
+        if self._sync_channel_id:
+            asyncio.create_task(self.get_other_channel_id())
         await self.on_handler_event(self._connect_handlers, self)
+
+    async def get_other_channel_id(self):
+        '''
+        Perform call to the other side of the channel to get its channel id
+        Each side is generating the channel id by itself so there is no way to identify a connection without this sync
+        '''
+        if self._other_channel_id is None:
+            other_channel_id = await self.other._get_channel_id_()
+            self._other_channel_id = other_channel_id.result if other_channel_id and other_channel_id.result else None
+            self._channel_id_synced.set()
 
     async def on_disconnect(self):
         # disconnect happend - mark the channel as closed
@@ -247,7 +276,7 @@ class RpcChannel:
     async def on_request(self, message: RpcRequest):
         """
         Handle incoming RPC requests - calling relevant exposed method
-        Note: methods prefixed with "_" are protected and ignored. 
+        Note: methods prefixed with "_" are protected and ignored.
 
         Args:
             message (RpcRequest): the RPC request with the method to call
@@ -256,7 +285,7 @@ class RpcChannel:
         logger.debug("Handling RPC request - %s", {'request':message, 'channel':self.id})
         method_name = message.method
         # Ignore "_" prefixed methods (except the built in "_ping_")
-        if (isinstance(method_name, str) and (not method_name.startswith("_") or method_name == "_ping_")):
+        if (isinstance(method_name, str) and (not method_name.startswith("_") or method_name in EXPOSED_BUILT_IN_METHODS)):
             method = getattr(self.methods, method_name)
             if callable(method):
                 result = await method(**message.arguments)
