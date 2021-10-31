@@ -272,6 +272,7 @@ class RpcChannel:
             self._other_channel_id = other_channel_id.result if other_channel_id and other_channel_id.result else None
             if self._other_channel_id is None:
                 raise RemoteValueError()
+            # update asyncio event that we received remote channel id
             self._channel_id_synced.set()
             return self._other_channel_id
         else:
