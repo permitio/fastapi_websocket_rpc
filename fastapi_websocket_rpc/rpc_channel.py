@@ -19,6 +19,8 @@ logger = get_logger("RPC_CHANNEL")
 class DEAFULT_TIMEOUT:
     pass
 
+class RemoteValueError(ValueError):
+    pass
 
 class RpcException(Exception):
     pass
@@ -268,6 +270,8 @@ class RpcChannel:
         if self._other_channel_id is None:
             other_channel_id = await self.other._get_channel_id_()
             self._other_channel_id = other_channel_id.result if other_channel_id and other_channel_id.result else None
+            if self._other_channel_id is None:
+                raise RemoteValueError()
             self._channel_id_synced.set()
             return self._other_channel_id
         else:
