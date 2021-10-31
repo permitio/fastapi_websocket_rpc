@@ -141,11 +141,11 @@ class RpcChannel:
         self.default_response_timeout = default_response_timeout
         # Unique channel id
         self.id = channel_id if channel_id is not None else gen_uid()
-        # should get remote channel id
+        # flag control should we retrieve the channel id of the other side
         self._sync_channel_id = sync_channel_id
-        # other side of the channel id if sync_channel_id is True
+        # The channel id of the other side (if sync_channel_id is True)
         self._other_channel_id = None
-        # asyncio event to check if we got other channel id
+        # asyncio event to check if we got the channel id of the other side
         self._channel_id_synced = asyncio.Event()
         #
         # convineice caller
@@ -166,7 +166,12 @@ class RpcChannel:
         return self._context
 
     async def get_other_channel_id(self) -> str:
-        asyncio.wait_for(self._channel_id_synced.wait(), DEAFULT_TIMEOUT)
+        '''
+        Method to get the channel id of the other side of the channel
+        The _channel_id_synced verify we have it
+        Timeout exception can be raised if the value isn't available
+        '''
+        await asyncio.wait_for(self._channel_id_synced.wait(), self.default_response_timeout)
         return self._other_channel_id
 
     def get_return_type(self, method):
@@ -252,10 +257,10 @@ class RpcChannel:
         Run all callbacks from self._connect_handlers
         '''
         if self._sync_channel_id:
-            asyncio.create_task(self.get_other_channel_id())
+            self._get_other_channel_id_task = asyncio.create_task(self._get_other_channel_id())
         await self.on_handler_event(self._connect_handlers, self)
 
-    async def get_other_channel_id(self):
+    async def _get_other_channel_id(self):
         '''
         Perform call to the other side of the channel to get its channel id
         Each side is generating the channel id by itself so there is no way to identify a connection without this sync
@@ -264,6 +269,9 @@ class RpcChannel:
             other_channel_id = await self.other._get_channel_id_()
             self._other_channel_id = other_channel_id.result if other_channel_id and other_channel_id.result else None
             self._channel_id_synced.set()
+            return self._other_channel_id
+        else:
+            return self._other_channel_id
 
     async def on_disconnect(self):
         # disconnect happend - mark the channel as closed

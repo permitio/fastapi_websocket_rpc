@@ -12,6 +12,7 @@ from .schemas import RpcRequest, RpcResponse
 from .utils import gen_uid
 
 PING_RESPONSE = "pong"
+# list of internal methods that can be called from remote
 EXPOSED_BUILT_IN_METHODS =  ['_ping_', '_get_channel_id_']
 # NULL default value - indicating no response was received
 class NoResponse:
@@ -51,7 +52,7 @@ class RpcMethodsBase:
 
     async def _get_channel_id_(self)->str:
         """
-        built in ping for keep-alive
+        built in channel id to better identify your remote
         """
         return self._channel.id
 
