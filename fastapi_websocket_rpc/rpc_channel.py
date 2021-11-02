@@ -1,6 +1,6 @@
-'''
+"""
 Definition for an RPC channel protocol on top of a websocket - enabling bi-directional request/response interactions
-'''
+"""
 import asyncio
 from inspect import _empty, getmembers, ismethod, signature
 from typing import Any, Coroutine, Dict, List
@@ -168,11 +168,11 @@ class RpcChannel:
         return self._context
 
     async def get_other_channel_id(self) -> str:
-        '''
+        """
         Method to get the channel id of the other side of the channel
         The _channel_id_synced verify we have it
         Timeout exception can be raised if the value isn't available
-        '''
+        """
         await asyncio.wait_for(self._channel_id_synced.wait(), self.default_response_timeout)
         return self._other_channel_id
 
@@ -254,19 +254,19 @@ class RpcChannel:
         await asyncio.gather(*(callback(*args, **kwargs) for callback in handlers))
 
     async def on_connect(self):
-        '''
+        """
         Run get other channel id if sync_channel_id is True
         Run all callbacks from self._connect_handlers
-        '''
+        """
         if self._sync_channel_id:
             self._get_other_channel_id_task = asyncio.create_task(self._get_other_channel_id())
         await self.on_handler_event(self._connect_handlers, self)
 
     async def _get_other_channel_id(self):
-        '''
+        """
         Perform call to the other side of the channel to get its channel id
         Each side is generating the channel id by itself so there is no way to identify a connection without this sync
-        '''
+        """
         if self._other_channel_id is None:
             other_channel_id = await self.other._get_channel_id_()
             self._other_channel_id = other_channel_id.result if other_channel_id and other_channel_id.result else None
