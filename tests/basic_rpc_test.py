@@ -29,7 +29,7 @@ uri = f"ws://localhost:{PORT}/ws"
 def setup_server():
     app =  FastAPI()
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
-    endpoint.register_route(app)   
+    endpoint.register_route(app)
     uvicorn.run(app, port=PORT )
 
 
@@ -53,14 +53,45 @@ async def test_echo(server):
 
 
 @pytest.mark.asyncio
+async def test_ping(server):
+    """
+    Test basic RPC with a simple ping
+    """
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4) as client:
+        try:
+            response = await client.other._ping_()
+            passed = True
+        except Exception as e:
+            logging.exception("Ping test failed")
+            passed = False
+        assert passed
+
+
+@pytest.mark.asyncio
+async def test_other_channel_id(server):
+    """
+    Test basic RPC with a simple _get_channel_id_
+    """
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4) as client:
+        try:
+            response = await client.other._get_channel_id_()
+            assert response.result_type  == 'str'
+            passed = True
+        except Exception as e:
+            logging.exception("_get_channel_id test failed")
+            passed = False
+        assert passed
+
+
+@pytest.mark.asyncio
 async def test_keep_alive(server):
     """
     Test basic RPC with a simple echo + keep alive in the background
     """
-    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, keep_alive=0.1) as client:   
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, keep_alive=0.1) as client:
         text = "Hello World!"
         response = await client.other.echo(text=text)
-        assert response.result == text        
+        assert response.result == text
         await asyncio.sleep(0.6)
 
 

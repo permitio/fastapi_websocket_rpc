@@ -12,7 +12,8 @@ from .schemas import RpcRequest, RpcResponse
 from .utils import gen_uid
 
 PING_RESPONSE = "pong"
-
+# list of internal methods that can be called from remote
+EXPOSED_BUILT_IN_METHODS =  ['_ping_', '_get_channel_id_']
 # NULL default value - indicating no response was received
 class NoResponse:
     pass
@@ -22,7 +23,7 @@ class RpcMethodsBase:
     """
     The basic interface RPC channels excpets method groups to implement.
      - create copy of the method object
-     - set channel 
+     - set channel
      - provide '_ping_' for keep-alive
     """
 
@@ -48,6 +49,12 @@ class RpcMethodsBase:
         built in ping for keep-alive
         """
         return PING_RESPONSE
+
+    async def _get_channel_id_(self)->str:
+        """
+        built in channel id to better identify your remote
+        """
+        return self._channel.id
 
 
 class ProcessDetails(BaseModel):
@@ -75,7 +82,7 @@ class RpcUtilityMethods(RpcMethodsBase):
             call_id = gen_uid()
             # Call async -  without waiting to avoid locking the event_loop
             asyncio.create_task(self.channel.async_call(method_name, args=args, call_id=call_id))
-            # return the id- which can be used to check the response once it's received 
+            # return the id- which can be used to check the response once it's received
             return call_id
 
     async def get_response(self, call_id="") -> typing.Any:
@@ -83,6 +90,6 @@ class RpcUtilityMethods(RpcMethodsBase):
             res = self.channel.get_saved_response(call_id)
             self.channel.clear_saved_call(call_id)
             return res
-            
+
     async def echo(self, text: str) -> str:
         return text

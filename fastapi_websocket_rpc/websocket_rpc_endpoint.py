@@ -48,13 +48,14 @@ class WebsocketRPCEndpoint:
                  on_disconnect: List[Coroutine] = None,
                  on_connect: List[Coroutine] = None,
                  frame_type: WebSocketFrameType = WebSocketFrameType.Text,
-                 serializing_socket_cls: Type[SimpleWebSocket] = JsonSerializingWebSocket):
+                 serializing_socket_cls: Type[SimpleWebSocket] = JsonSerializingWebSocket,
+                 rpc_channel_get_remote_id: bool = False):
         """[summary]
 
         Args:
             methods (RpcMethodsBase): RPC methods to expose
             manager ([ConnectionManager], optional): Connection tracking object. Defaults to None (i.e. new ConnectionManager()).
-            on_disconnect (List[coroutine], optional): Callbacks per disconnection 
+            on_disconnect (List[coroutine], optional): Callbacks per disconnection
             on_connect(List[coroutine], optional): Callbacks per connection (Server spins the callbacks as a new task, not waiting on it.)
         """
         self.manager = manager if manager is not None else ConnectionManager()
@@ -64,6 +65,7 @@ class WebsocketRPCEndpoint:
         self._on_connect = on_connect
         self._frame_type = frame_type
         self._serializing_socket_cls = serializing_socket_cls
+        self._rpc_channel_get_remote_id = rpc_channel_get_remote_id
 
 
     async def main_loop(self, websocket: WebSocket, client_id: str = None, **kwargs):
@@ -71,7 +73,7 @@ class WebsocketRPCEndpoint:
             await self.manager.connect(websocket)
             logger.info(f"Client connected", {'remote_address':websocket.client})
             simple_websocket = self._serializing_socket_cls(WebSocketSimplifier(websocket, frame_type=self._frame_type))
-            channel = RpcChannel(self.methods, simple_websocket, **kwargs)
+            channel = RpcChannel(self.methods, simple_websocket, sync_channel_id=self._rpc_channel_get_remote_id, **kwargs)
             # register connect / disconnect handler
             channel.register_connect_handler(self._on_connect)
             channel.register_disconnect_handler(self._on_disconnect)
@@ -95,11 +97,11 @@ class WebsocketRPCEndpoint:
     async def handle_disconnect(self, websocket, channel):
         self.manager.disconnect(websocket)
         await channel.on_disconnect()
-            
+
 
     async def on_connect(self, channel, websocket):
         """
-        Called upon new client connection 
+        Called upon new client connection
         """
         # Trigger connect callback if available
         if (self._on_connect is not None):
