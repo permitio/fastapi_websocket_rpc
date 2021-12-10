@@ -8,8 +8,8 @@
 # ⚡ FASTAPI Websocket RPC
 RPC over Websockets made easy, robust, and production ready
 
-<a href="https://github.com/authorizon/fastapi_websocket_rpc/actions?query=workflow%3ATests" target="_blank">
-    <img src="https://github.com/authorizon/fastapi_websocket_rpc/workflows/Tests/badge.svg" alt="Tests">
+<a href="https://github.com/permitio/fastapi_websocket_rpc/actions?query=workflow%3ATests" target="_blank">
+    <img src="https://github.com/permitio/fastapi_websocket_rpc/workflows/Tests/badge.svg" alt="Tests">
 </a>
 
 <a href="https://pypi.org/project/fastapi-websocket-rpc/" target="_blank">
@@ -108,10 +108,10 @@ See the [examples](/examples) and [tests](/tests) folders for more server and cl
 
 
 ## What can I do with this?
-Websockets are ideal to create bi-directional realtime connections over the web. 
- - Push updates 
- - Remote control mechanism 
- - Pub / Sub (see [fastapi_websocket_pubsub](https://github.com/authorizon/fastapi_websocket_pubsub))
+Websockets are ideal to create bi-directional realtime connections over the web.
+ - Push updates
+ - Remote control mechanism
+ - Pub / Sub (see [fastapi_websocket_pubsub](https://github.com/permitio/fastapi_websocket_pubsub))
  - Trigger events (see "tests/trigger_flow_test.py")
  - Node negotiations (see "tests/advanced_rpc_test.py :: test_recursive_rpc_calls")
 

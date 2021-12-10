@@ -15,11 +15,11 @@ setup(
     name='fastapi_websocket_rpc',
     version='0.1.21',
     author='Or Weis',
-    author_email="or@authorizon.com",
+    author_email="or@permit.io",
     description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",
     long_description_content_type="text/markdown",
     long_description=long_description,
-    url="https://github.com/authorizon/fastapi_websocket_rpc",
+    url="https://github.com/permitio/fastapi_websocket_rpc",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
