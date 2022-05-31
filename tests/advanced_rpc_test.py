@@ -12,7 +12,6 @@ import pytest
 import uvicorn
 from fastapi import (APIRouter, Depends, FastAPI, Header, HTTPException,
                      WebSocket)
-from starlette import responses
 
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
 from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient

@@ -1,8 +1,5 @@
-aiohttp>=3.7.2
-fastapi
-pydantic
-starlette>=0.13.6
-uvicorn
-requests>=2.25.0
-websockets
-tenacity>=6.3.1
+fastapi>=0.78.0,<1
+pydantic>=1.9.1,<2
+uvicorn>=0.17.6,<1
+websockets>=10.3,<11
+tenacity>=8.0.1,<9
