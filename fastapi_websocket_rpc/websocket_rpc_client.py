@@ -81,8 +81,6 @@ class WebSocketRpcClient:
         """
         self.methods = methods or RpcMethodsBase()
         self.connect_kwargs = kwargs
-        # Websocket connection
-        self.conn = None
         # Websocket object
         self.ws = None
         # URI to connect on
@@ -109,29 +107,34 @@ class WebSocketRpcClient:
 
     async def __connect__(self):
         try:
-            # Make sure we don't have any hanging tasks (from previous retry runs)
-            self.cancel_tasks()
-            logger.info(f"Trying server - {self.uri}")
-            # Start connection
-            self.conn = websockets.connect(self.uri, **self.connect_kwargs)
-            # Get socket and wrap in our serialization class
-            raw_ws = await self.conn.__aenter__()
-            self.ws = self._serializing_socket_cls(raw_ws)
-            # Wrap
-            # Init an RPC channel to work on-top of the connection
-            self.channel = RpcChannel(self.methods, self.ws, default_response_timeout=self.default_response_timeout)
-            # register handlers
-            self.channel.register_connect_handler(self._on_connect)
-            self.channel.register_disconnect_handler(self._on_disconnect)
-            # Start reading incoming RPC calls
-            self._read_task = asyncio.create_task(self.reader())
-            # start keep alive (if enabled i.e. value isn't 0)
-            self._start_keep_alive_task()
-            # Wait for RPC channel on the server to be ready (ping check)
-            await self.wait_on_rpc_ready()
-            # trigger connect handlers
-            await self.channel.on_connect()
-            return self
+            try:
+                logger.info(f"Trying server - {self.uri}")
+                # Start connection
+                raw_ws = await websockets.connect(self.uri, **self.connect_kwargs)
+                # Wrap socket in our serialization class
+                self.ws = self._serializing_socket_cls(raw_ws)
+                # Init an RPC channel to work on-top of the connection
+                self.channel = RpcChannel(self.methods, self.ws, default_response_timeout=self.default_response_timeout)
+                # register handlers
+                self.channel.register_connect_handler(self._on_connect)
+                self.channel.register_disconnect_handler(self._on_disconnect)
+                # Start reading incoming RPC calls
+                self._read_task = asyncio.create_task(self.reader())
+                # start keep alive (if enabled i.e. value isn't 0)
+                self._start_keep_alive_task()
+                # Wait for RPC channel on the server to be ready (ping check)
+                await self.wait_on_rpc_ready()
+                # trigger connect handlers
+                await self.channel.on_connect()
+                return self
+            except:
+                # Clean partly initiated state on error
+                if self.ws is not None:
+                    await self.ws.close()
+                if self.channel is not None:
+                    await self.channel.close()
+                self.cancel_tasks()
+                raise
         except ConnectionRefusedError:
             logger.info("RPC connection was refused by server")
             raise
@@ -162,9 +165,6 @@ class WebSocketRpcClient:
 
     async def __aexit__(self, *args, **kwargs):
         await self.close()
-        # close context of underlying socket
-        if (hasattr(self.conn, "ws_client")):
-            await self.conn.__aexit__(*args, **kwargs)            
 
     async def close(self):
         logger.info("Closing RPC client")
@@ -175,6 +175,7 @@ class WebSocketRpcClient:
         if not self.channel.isClosed():
             # notify handlers (if any)
             await self.channel.on_disconnect()
+            await self.channel.close()
         # Clear tasks
         self.cancel_tasks()
     
