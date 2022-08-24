@@ -16,20 +16,24 @@ from .logger import get_logger
 logger = get_logger("RPC_CHANNEL")
 
 
-class DEAFULT_TIMEOUT:
+class DEFAULT_TIMEOUT:
     pass
+
 
 class RemoteValueError(ValueError):
     pass
 
+
 class RpcException(Exception):
     pass
+
 
 class RpcChannelClosedException(Exception):
     """
     Raised when the channel is closed mid-operation
     """
     pass
+
 
 class UnknownMethodException(RpcException):
     pass
@@ -92,7 +96,6 @@ class RpcCaller:
         self._method_names = [method[0] for method in getmembers(
             methods, lambda i: ismethod(i))] if methods is not None else None
 
-
     def __getattribute__(self, name: str):
         if (not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS) and (self._method_names is None or name in self._method_names):
             return RpcProxy(self._channel, name)
@@ -104,10 +107,12 @@ class RpcCaller:
 async def OnConnectCallback(channel):
     pass
 
+
 async def OnDisconnectCallback(channel):
     pass
 
-async def OnErrorCallback(channel, err:Exception):
+
+async def OnErrorCallback(channel, err: Exception):
     pass
 
 
@@ -116,7 +121,7 @@ class RpcChannel:
     A wire agnostic json-rpc channel protocol for both server and client.
     Enable each side to send RPC-requests (calling exposed methods on other side) and receive rpc-responses with the return value
 
-    provides a .other property for callign remote methods.
+    provides a .other property for calling remote methods.
     e.g. answer = channel.other.add(a=1,b=1) will (For example) ask the other side to perform 1+1 and will return an RPC-response of 2
     """
 
@@ -150,12 +155,12 @@ class RpcChannel:
         # asyncio event to check if we got the channel id of the other side
         self._channel_id_synced = asyncio.Event()
         #
-        # convineice caller
+        # convenience caller
         # TODO - pass remote methods object to support validation before call
         self.other = RpcCaller(self)
         # core event callback regsiters
-        self._connect_handlers:List[OnConnectCallback] = []
-        self._disconnect_handlers:List[OnDisconnectCallback] = []
+        self._connect_handlers: List[OnConnectCallback] = []
+        self._disconnect_handlers: List[OnDisconnectCallback] = []
         self._error_handlers = []
         # internal event
         self._closed = asyncio.Event()
@@ -202,6 +207,9 @@ class RpcChannel:
         return self._closed.is_set()
 
     async def wait_until_closed(self):
+        """
+        Waits until the close internal event happens.
+        """
         return await self._closed.wait()
 
     async def on_message(self, data):
@@ -216,14 +224,14 @@ class RpcChannel:
             if message.response is not None:
                 await self.on_response(message.response)
         except ValidationError as e:
-            logger.error(f"Failed to parse message", {'message':data, 'error':e})
+            logger.error(f"Failed to parse message", {
+                         'message': data, 'error': e})
             await self.on_error(e)
         except Exception as e:
             await self.on_error(e)
             raise
 
-
-    def register_connect_handler(self, coros:List[OnConnectCallback]=None):
+    def register_connect_handler(self, coros: List[OnConnectCallback] = None):
         """
         Register a connection handler callback that will be called (As an async task)) with the channel
         Args:
@@ -232,7 +240,7 @@ class RpcChannel:
         if coros is not None:
             self._connect_handlers.extend(coros)
 
-    def register_disconnect_handler(self, coros:List[OnDisconnectCallback]=None):
+    def register_disconnect_handler(self, coros: List[OnDisconnectCallback] = None):
         """
         Register a disconnect handler callback that will be called (As an async task)) with the channel id
         Args:
@@ -241,7 +249,7 @@ class RpcChannel:
         if coros is not None:
             self._disconnect_handlers.extend(coros)
 
-    def register_error_handler(self, coros:List[OnErrorCallback]=None):
+    def register_error_handler(self, coros: List[OnErrorCallback] = None):
         """
         Register an error handler callback that will be called (As an async task)) with the channel and triggered error.
         Args:
@@ -259,7 +267,8 @@ class RpcChannel:
         Run all callbacks from self._connect_handlers
         """
         if self._sync_channel_id:
-            self._get_other_channel_id_task = asyncio.create_task(self._get_other_channel_id())
+            self._get_other_channel_id_task = asyncio.create_task(
+                self._get_other_channel_id())
         await self.on_handler_event(self._connect_handlers, self)
 
     async def _get_other_channel_id(self):
@@ -283,7 +292,7 @@ class RpcChannel:
         self._closed.set()
         await self.on_handler_event(self._disconnect_handlers, self)
 
-    async def on_error(self, error:Exception):
+    async def on_error(self, error: Exception):
         await self.on_handler_event(self._error_handlers, self, error)
 
     async def on_request(self, message: RpcRequest):
@@ -295,7 +304,8 @@ class RpcChannel:
             message (RpcRequest): the RPC request with the method to call
         """
         # TODO add exception support (catch exceptions and pass to other side as response with errors)
-        logger.debug("Handling RPC request - %s", {'request':message, 'channel':self.id})
+        logger.debug("Handling RPC request - %s",
+                     {'request': message, 'channel': self.id})
         method_name = message.method
         # Ignore "_" prefixed methods (except the built in "_ping_")
         if (isinstance(method_name, str) and (not method_name.startswith("_") or method_name in EXPOSED_BUILT_IN_METHODS)):
@@ -329,35 +339,37 @@ class RpcChannel:
         Args:
             response (RpcResponse): the received response
         """
-        logger.debug("Handling RPC response - %s", {'response':response})
+        logger.debug("Handling RPC response - %s", {'response': response})
         if response.call_id is not None and response.call_id in self.requests:
             self.responses[response.call_id] = response
             promise = self.requests[response.call_id]
             promise.set()
 
-    async def wait_for_response(self, promise, timeout=DEAFULT_TIMEOUT) -> RpcResponse:
+    async def wait_for_response(self, promise, timeout=DEFAULT_TIMEOUT) -> RpcResponse:
         """
         Wait on a previously made call
         Args:
             promise (RpcPromise): the awaitable-wrapper returned from the RPC request call
-            timeout (int, None, or DEAFULT_TIMEOUT): the timeout to wait on the response, defaults to DEAFULT_TIMEOUT.
-                - DEAFULT_TIMEOUT - use the value passed as 'default_response_timeout' in channel init
+            timeout (int, None, or DEFAULT_TIMEOUT): the timeout to wait on the response, defaults to DEFAULT_TIMEOUT.
+                - DEFAULT_TIMEOUT - use the value passed as 'default_response_timeout' in channel init
                 - None - no timeout
                 - a number - seconds to wait before timing out
         Raises:
             asyncio.exceptions.TimeoutError - on timeout
             RpcChannelClosedException - if the channel fails before wait could be completed
         """
-        if timeout is DEAFULT_TIMEOUT:
+        if timeout is DEFAULT_TIMEOUT:
             timeout = self.default_response_timeout
         # wait for the promise or until the channel is terminated
-        for coro in asyncio.as_completed([promise.wait(), self._closed.wait()], timeout=timeout):
-            await coro
-            break
+        _, pending = await asyncio.wait([promise.wait(), self._closed.wait()], timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
+        # Cancel all pending futures and then detect if close was the first done
+        for fut in pending:
+            fut.cancel()
         response = self.responses.get(promise.call_id, NoResponse)
         # if the channel was closed before we could finish
         if response is NoResponse:
-            raise RpcChannelClosedException(f"Channel Closed before RPC response for {promise.call_id} could be received")
+            raise RpcChannelClosedException(
+                f"Channel Closed before RPC response for {promise.call_id} could be received")
         self.clear_saved_call(promise.call_id)
         return response
 
@@ -373,18 +385,14 @@ class RpcChannel:
         call_id = call_id or gen_uid()
         msg = RpcMessage(request=RpcRequest(
             method=name, arguments=args, call_id=call_id))
-        logger.debug("Calling RPC method - %s", {'message':msg})
+        logger.debug("Calling RPC method - %s", {'message': msg})
         await self.send(msg)
         promise = self.requests[msg.request.call_id] = RpcPromise(msg.request)
         return promise
 
-    async def call(self, name, args={}, timeout=DEAFULT_TIMEOUT):
+    async def call(self, name, args={}, timeout=DEFAULT_TIMEOUT):
         """
         Call a method and wait for a response to be received
         """
         promise = await self.async_call(name, args)
         return await self.wait_for_response(promise, timeout=timeout)
-
-
-
-
