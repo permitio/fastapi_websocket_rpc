@@ -10,7 +10,7 @@ async def run_client(uri):
         response = await client.other.echo(text="Hello World!")
         print(response)
         # call get_process_details on the other side
-        response = await client.call("get_proccess_details")
+        response = await client.call("get_process_details")
         print(response)
 
 if __name__ == "__main__":

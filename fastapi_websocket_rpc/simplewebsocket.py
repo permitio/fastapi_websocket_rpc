@@ -2,6 +2,7 @@ from typing import Any
 from abc import ABC, abstractmethod
 import json
 
+
 class SimpleWebSocket(ABC):
     """
     Abstract base class for all websocket related wrappers.
@@ -39,4 +40,3 @@ class JsonSerializingWebSocket(SimpleWebSocket):
 
     async def close(self, code: int = 1000):
         await self._websocket.close(code)
-

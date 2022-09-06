@@ -3,7 +3,8 @@ import os
 import sys
 
 # Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.path.pardir)))
 
 import asyncio
 from multiprocessing import Process
@@ -21,7 +22,7 @@ from fastapi_websocket_rpc.utils import gen_uid
 from fastapi_websocket_rpc.simplewebsocket import SimpleWebSocket
 from fastapi_websocket_rpc import WebSocketFrameType
 
-#Set debug logs (and direct all logs to UVICORN format)
+# Set debug logs (and direct all logs to UVICORN format)
 logging_config.set_mode(LoggingModes.UVICORN, logging.DEBUG)
 
 # Configurable
@@ -52,12 +53,12 @@ class BinarySerializingWebSocket(SimpleWebSocket):
 
 
 def setup_server():
-    app =  FastAPI()
+    app = FastAPI()
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods(),
                                     frame_type=WebSocketFrameType.Binary,
                                     serializing_socket_cls=BinarySerializingWebSocket)
     endpoint.register_route(app)
-    uvicorn.run(app, port=PORT )
+    uvicorn.run(app, port=PORT)
 
 
 @pytest.fixture(scope="module")
@@ -66,7 +67,7 @@ def server():
     proc = Process(target=setup_server, args=(), daemon=True)
     proc.start()
     yield proc
-    proc.kill() # Cleanup after test
+    proc.kill()  # Cleanup after test
 
 @pytest.mark.asyncio
 async def test_echo(server):
@@ -87,8 +88,8 @@ async def test_structured_response(server):
     """
     async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, serializing_socket_cls=BinarySerializingWebSocket) as client:
         utils = RpcUtilityMethods()
-        ourProcess = await utils.get_proccess_details()
-        response = await client.other.get_proccess_details()
+        ourProcess = await utils.get_process_details()
+        response = await client.other.get_process_details()
         # We got a valid process id
         assert isinstance(response.result["pid"], int)
         # We have all the details form the other process

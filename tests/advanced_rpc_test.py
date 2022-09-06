@@ -2,7 +2,8 @@ import os
 import sys
 
 # Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.path.pardir)))
 
 import time 
 import asyncio
@@ -26,16 +27,16 @@ uri = f"ws://localhost:{PORT}/ws/{CLIENT_ID}"
 
 
 def setup_server():
-    app =  FastAPI()
+    app = FastAPI()
     router = APIRouter()
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
 
     @router.websocket("/ws/{client_id}")
     async def websocket_rpc_endpoint(websocket: WebSocket, client_id: str):
-        await endpoint.main_loop(websocket,client_id)
+        await endpoint.main_loop(websocket, client_id)
 
     app.include_router(router)
-    uvicorn.run(app, port=PORT )
+    uvicorn.run(app, port=PORT)
 
 
 @pytest.fixture(scope="module")
@@ -44,7 +45,7 @@ def server():
     proc = Process(target=setup_server, args=(), daemon=True)
     proc.start()
     yield proc
-    proc.kill() # Cleanup after test
+    proc.kill()  # Cleanup after test
 
 
 @pytest.mark.asyncio
@@ -57,15 +58,14 @@ async def test_recursive_rpc_calls(server):
         - remote promise access
     """
     async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4) as client:
-        text="recursive-helloworld"
+        text = "recursive-helloworld"
         utils = RpcUtilityMethods()
-        ourProcess = await utils.get_proccess_details()
+        ourProcess = await utils.get_process_details()
         # we call the server's call_me_back, asking him to call our echo method
-        remote_promise = await client.other.call_me_back(method_name="echo", args={"text":text})
+        remote_promise = await client.other.call_me_back(method_name="echo", args={"text": text})
         # give the server a chance to call us
         await asyncio.sleep(1)
         # go back to the server to get our own response from it
         response = await client.other.get_response(call_id=remote_promise.result)
         # check the response we sent
         assert response.result['result'] == text
-

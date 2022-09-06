@@ -11,9 +11,10 @@ from .simplewebsocket import SimpleWebSocket, JsonSerializingWebSocket
 
 logger = get_logger("RPC_ENDPOINT")
 
+
 class WebSocketSimplifier(SimpleWebSocket):
     """
-    Simple warpper over FastAPI WebSocket to ensure unified interface for send/recv
+    Simple wrapper over FastAPI WebSocket to ensure unified interface for send/recv
     """
 
     def __init__(self, websocket: WebSocket, frame_type: WebSocketFrameType = WebSocketFrameType.Text):
@@ -27,7 +28,6 @@ class WebSocketSimplifier(SimpleWebSocket):
         else:
             return self.websocket.send_text
 
-
     @property
     def recv(self):
         if self.frame_type == WebSocketFrameType.Binary:
@@ -37,6 +37,7 @@ class WebSocketSimplifier(SimpleWebSocket):
 
     async def close(self, code: int = 1000):
         return await self.websocket.close(code)
+
 
 class WebsocketRPCEndpoint:
     """
@@ -67,13 +68,15 @@ class WebsocketRPCEndpoint:
         self._serializing_socket_cls = serializing_socket_cls
         self._rpc_channel_get_remote_id = rpc_channel_get_remote_id
 
-
     async def main_loop(self, websocket: WebSocket, client_id: str = None, **kwargs):
         try:
             await self.manager.connect(websocket)
-            logger.info(f"Client connected", {'remote_address':websocket.client})
-            simple_websocket = self._serializing_socket_cls(WebSocketSimplifier(websocket, frame_type=self._frame_type))
-            channel = RpcChannel(self.methods, simple_websocket, sync_channel_id=self._rpc_channel_get_remote_id, **kwargs)
+            logger.info(f"Client connected", {
+                        'remote_address': websocket.client})
+            simple_websocket = self._serializing_socket_cls(
+                WebSocketSimplifier(websocket, frame_type=self._frame_type))
+            channel = RpcChannel(self.methods, simple_websocket,
+                                 sync_channel_id=self._rpc_channel_get_remote_id, **kwargs)
             # register connect / disconnect handler
             channel.register_connect_handler(self._on_connect)
             channel.register_disconnect_handler(self._on_disconnect)
@@ -84,11 +87,13 @@ class WebsocketRPCEndpoint:
                     data = await simple_websocket.recv()
                     await channel.on_message(data)
             except WebSocketDisconnect:
-                logger.info(f"Client disconnected - {websocket.client.port} :: {channel.id}")
+                logger.info(
+                    f"Client disconnected - {websocket.client.port} :: {channel.id}")
                 await self.handle_disconnect(websocket, channel)
             except:
                 # cover cases like - RuntimeError('Cannot call "send" once a close message has been sent.')
-                logger.info(f"Client connection failed - {websocket.client.port} :: {channel.id}")
+                logger.info(
+                    f"Client connection failed - {websocket.client.port} :: {channel.id}")
                 await self.handle_disconnect(websocket, channel)
         except:
             logger.exception(f"Failed to serve - {websocket.client.port}")
@@ -97,7 +102,6 @@ class WebsocketRPCEndpoint:
     async def handle_disconnect(self, websocket, channel):
         self.manager.disconnect(websocket)
         await channel.on_disconnect()
-
 
     async def on_connect(self, channel, websocket):
         """

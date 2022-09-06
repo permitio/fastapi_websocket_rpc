@@ -19,7 +19,8 @@ logger = get_logger("RPC_CLIENT")
 def isNotInvalidStatusCode(value):
     return not isinstance(value, InvalidStatusCode)
 
-def isNotForbbiden(value)->bool:
+
+def isNotForbbiden(value) -> bool:
     """
     Returns:
         bool: Returns True as long as the given exception value is not InvalidStatusCode with 401 or 403
@@ -30,25 +31,25 @@ def isNotForbbiden(value)->bool:
 class WebSocketRpcClient:
     """
     RPC-client to connect to an WebsocketRPCEndpoint
-    Can call methodes exposed by server
+    Can call methods exposed by server
     Exposes methods that the server can call
     """
 
-    def logerror(retry_state:tenacity.RetryCallState):
+    def logerror(retry_state: tenacity.RetryCallState):
         logger.exception(retry_state.outcome.exception())
 
     DEFAULT_RETRY_CONFIG = {
         'wait': wait.wait_random_exponential(min=0.1, max=120),
         'retry': retry_if_exception(isNotForbbiden),
         'reraise': True,
-        "retry_error_callback":logerror
+        "retry_error_callback": logerror
     }
 
     # RPC ping check on successful Websocket connection
     # @see wait_on_rpc_ready
     # interval to try RPC-pinging the sever (Seconds)
     WAIT_FOR_INITIAL_CONNECTION = 1
-    # How many times to try repinging before rejecting the entire connection
+    # How many times to try re-pinging before rejecting the entire connection
     MAX_CONNECTION_ATTEMPTS = 5
 
     def __init__(self, uri: str, methods: RpcMethodsBase = None,
@@ -63,7 +64,7 @@ class WebSocketRpcClient:
         Args:
             uri (str): server uri to connect to (e.g. 'http://localhost/ws/client1')
             methods (RpcMethodsBase): RPC methods to expose to the server
-            retry_config (dict): Tenacity.retry config (@see https://tenacity.readthedocs.io/en/latest/api.html#retry-main-api) 
+            retry_config (dict): Tenacity.retry config (@see https://tenacity.readthedocs.io/en/latest/api.html#retry-main-api)
             default_response_timeout (float): default time in seconds
             on_connect (List[Coroutine]): callbacks on connection being established (each callback is called with the channel)
                                           @note exceptions thrown in on_connect callbacks propagate to the client and will cause connection restart!
@@ -114,7 +115,8 @@ class WebSocketRpcClient:
                 # Wrap socket in our serialization class
                 self.ws = self._serializing_socket_cls(raw_ws)
                 # Init an RPC channel to work on-top of the connection
-                self.channel = RpcChannel(self.methods, self.ws, default_response_timeout=self.default_response_timeout)
+                self.channel = RpcChannel(
+                    self.methods, self.ws, default_response_timeout=self.default_response_timeout)
                 # register handlers
                 self.channel.register_connect_handler(self._on_connect)
                 self.channel.register_disconnect_handler(self._on_disconnect)
@@ -145,14 +147,15 @@ class WebSocketRpcClient:
             logger.info("RPC connection closed")
             raise
         except InvalidStatusCode as err:
-            logger.info(f"RPC Websocket failed - with invalid status code {err.status_code}")
+            logger.info(
+                f"RPC Websocket failed - with invalid status code {err.status_code}")
             raise
         except WebSocketException as err:
             logger.info(f"RPC Websocket failed - with {err}")
             raise
         except OSError as err:
             logger.info("RPC Connection failed - %s", err)
-            raise        
+            raise
         except Exception as err:
             logger.exception("RPC Error")
             raise
@@ -178,7 +181,7 @@ class WebSocketRpcClient:
             await self.channel.close()
         # Clear tasks
         self.cancel_tasks()
-    
+
     def cancel_tasks(self):
         # Stop keep alive if enabled
         self._cancel_keep_alive_task()
@@ -242,7 +245,8 @@ class WebSocketRpcClient:
 
     def _start_keep_alive_task(self):
         if self._keep_alive_interval > 0:
-            logger.debug(f"Starting keep alive task interval='{self._keep_alive_interval}' seconds")
+            logger.debug(
+                f"Starting keep alive task interval='{self._keep_alive_interval}' seconds")
             self._keep_alive_task = asyncio.create_task(self._keep_alive())
 
     async def wait_on_reader(self):
@@ -259,7 +263,8 @@ class WebSocketRpcClient:
         Call a method and wait for a response to be received
          Args:
             name (str): name of the method to call on the other side (As defined on the otherside's RpcMethods object)
-            args (dict): keyword arguments to be passeds to otherside method
+            args (dict): keyword arguments to be passed to otherside method
+            timeout (float, optional): See RpcChannel.
         """
         return await self.channel.call(name, args, timeout=timeout)
 

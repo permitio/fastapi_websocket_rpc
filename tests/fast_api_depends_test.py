@@ -5,7 +5,8 @@ from attr import s
 from websockets.exceptions import InvalidStatusCode
 
 # Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.path.pardir)))
 
 import time 
 import asyncio
@@ -36,16 +37,16 @@ async def check_token_header(websocket:WebSocket, x_token: str = Header(...)):
 
 
 def setup_server():
-    app =  FastAPI()
+    app = FastAPI()
     router = APIRouter()
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
 
     @router.websocket("/ws/{client_id}")
     async def websocket_rpc_endpoint(websocket: WebSocket, client_id: str, token=Depends(check_token_header)):
-        await endpoint.main_loop(websocket,client_id)
+        await endpoint.main_loop(websocket, client_id)
 
     app.include_router(router)
-    uvicorn.run(app, port=PORT )
+    uvicorn.run(app, port=PORT)
 
 @pytest.fixture()
 def server():
@@ -53,8 +54,7 @@ def server():
     proc = Process(target=setup_server, args=(), daemon=True)
     proc.start()
     yield proc
-    proc.kill() # Cleanup after test
-
+    proc.kill()  # Cleanup after test
 
 
 @pytest.mark.asyncio
@@ -66,6 +66,7 @@ async def test_valid_token(server):
         text = "Hello World!"
         response = await client.other.echo(text=text)
         assert response.result == text
+
 
 @pytest.mark.asyncio
 async def test_invalid_token(server):

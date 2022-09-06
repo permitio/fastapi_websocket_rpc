@@ -13,15 +13,17 @@ from .utils import gen_uid
 
 PING_RESPONSE = "pong"
 # list of internal methods that can be called from remote
-EXPOSED_BUILT_IN_METHODS =  ['_ping_', '_get_channel_id_']
+EXPOSED_BUILT_IN_METHODS = ['_ping_', '_get_channel_id_']
 # NULL default value - indicating no response was received
+
+
 class NoResponse:
     pass
 
 
 class RpcMethodsBase:
     """
-    The basic interface RPC channels excpets method groups to implement.
+    The basic interface RPC channels expects method groups to implement.
      - create copy of the method object
      - set channel
      - provide '_ping_' for keep-alive
@@ -44,13 +46,13 @@ class RpcMethodsBase:
         """ Simple copy ctor - overriding classes may need to override copy as well."""
         return copy.copy(self)
 
-    async def _ping_(self)->str:
+    async def _ping_(self) -> str:
         """
         built in ping for keep-alive
         """
         return PING_RESPONSE
 
-    async def _get_channel_id_(self)->str:
+    async def _get_channel_id_(self) -> str:
         """
         built in channel id to better identify your remote
         """
@@ -61,6 +63,7 @@ class ProcessDetails(BaseModel):
     pid: int = os.getpid()
     cmd: typing.List[str] = sys.argv
     workingdir: str = os.getcwd()
+
 
 class RpcUtilityMethods(RpcMethodsBase):
     """
@@ -73,7 +76,7 @@ class RpcUtilityMethods(RpcMethodsBase):
         """
         super().__init__()
 
-    async def get_proccess_details(self) -> ProcessDetails:
+    async def get_process_details(self) -> ProcessDetails:
         return ProcessDetails()
 
     async def call_me_back(self, method_name="", args={}) -> str:
@@ -81,7 +84,8 @@ class RpcUtilityMethods(RpcMethodsBase):
             # generate a uid we can use to track this request
             call_id = gen_uid()
             # Call async -  without waiting to avoid locking the event_loop
-            asyncio.create_task(self.channel.async_call(method_name, args=args, call_id=call_id))
+            asyncio.create_task(self.channel.async_call(
+                method_name, args=args, call_id=call_id))
             # return the id- which can be used to check the response once it's received
             return call_id
 

@@ -61,7 +61,7 @@ class RpcPromise:
 
     def set(self):
         """
-        Signal compeltion of request with received response
+        Signal completion of request with received response
         """
         self._event.set()
 
@@ -132,7 +132,7 @@ class RpcChannel:
             methods (RpcMethodsBase): RPC methods to expose to other side
             socket: socket object providing simple send/recv methods
             channel_id (str, optional): uuid for channel. Defaults to None in which case a random UUID is generated.
-            default_response_timeout(int, optional) default timeout for RPC call responses. Defaults to None - i.e. no timeout
+            default_response_timeout(float, optional) default timeout for RPC call responses. Defaults to None - i.e. no timeout
             sync_channel_id(bool, optional) should get the other side of the channel id, helps to identify connections, cost a bit networking time.
                 Defaults to False - i.e. not getting the other side channel id
         """
@@ -158,7 +158,7 @@ class RpcChannel:
         # convenience caller
         # TODO - pass remote methods object to support validation before call
         self.other = RpcCaller(self)
-        # core event callback regsiters
+        # core event callback registers
         self._connect_handlers: List[OnConnectCallback] = []
         self._disconnect_handlers: List[OnDisconnectCallback] = []
         self._error_handlers = []
@@ -288,7 +288,7 @@ class RpcChannel:
             return self._other_channel_id
 
     async def on_disconnect(self):
-        # disconnect happend - mark the channel as closed
+        # disconnect happened - mark the channel as closed
         self._closed.set()
         await self.on_handler_event(self._disconnect_handlers, self)
 
@@ -350,7 +350,7 @@ class RpcChannel:
         Wait on a previously made call
         Args:
             promise (RpcPromise): the awaitable-wrapper returned from the RPC request call
-            timeout (int, None, or DEFAULT_TIMEOUT): the timeout to wait on the response, defaults to DEFAULT_TIMEOUT.
+            timeout (float, None, or DEFAULT_TIMEOUT): the timeout to wait on the response, defaults to DEFAULT_TIMEOUT.
                 - DEFAULT_TIMEOUT - use the value passed as 'default_response_timeout' in channel init
                 - None - no timeout
                 - a number - seconds to wait before timing out

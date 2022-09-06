@@ -3,7 +3,8 @@ import os
 import sys
 
 # Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.path.pardir)))
 
 import asyncio
 from multiprocessing import Process
@@ -18,7 +19,7 @@ from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 from fastapi_websocket_rpc.utils import gen_uid
 
-#Set debug logs (and direct all logs to UVICORN format)
+# Set debug logs (and direct all logs to UVICORN format)
 logging_config.set_mode(LoggingModes.UVICORN, logging.DEBUG)
 
 # Configurable
@@ -27,10 +28,10 @@ uri = f"ws://localhost:{PORT}/ws"
 
 
 def setup_server():
-    app =  FastAPI()
+    app = FastAPI()
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
     endpoint.register_route(app)
-    uvicorn.run(app, port=PORT )
+    uvicorn.run(app, port=PORT)
 
 
 @pytest.fixture(scope="module")
@@ -39,7 +40,7 @@ def server():
     proc = Process(target=setup_server, args=(), daemon=True)
     proc.start()
     yield proc
-    proc.kill() # Cleanup after test
+    proc.kill()  # Cleanup after test
 
 @pytest.mark.asyncio
 async def test_echo(server):
@@ -75,7 +76,7 @@ async def test_other_channel_id(server):
     async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4) as client:
         try:
             response = await client.other._get_channel_id_()
-            assert response.result_type  == 'str'
+            assert response.result_type == 'str'
             passed = True
         except Exception as e:
             logging.exception("_get_channel_id test failed")
@@ -95,7 +96,6 @@ async def test_keep_alive(server):
         await asyncio.sleep(0.6)
 
 
-
 @pytest.mark.asyncio
 async def test_structured_response(server):
     """
@@ -104,8 +104,8 @@ async def test_structured_response(server):
     """
     async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4) as client:
         utils = RpcUtilityMethods()
-        ourProcess = await utils.get_proccess_details()
-        response = await client.other.get_proccess_details()
+        ourProcess = await utils.get_process_details()
+        response = await client.other.get_process_details()
         # We got a valid process id
         assert isinstance(response.result["pid"], int)
         # We have all the details form the other process
