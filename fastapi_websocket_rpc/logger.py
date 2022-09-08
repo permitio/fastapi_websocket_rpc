@@ -46,8 +46,6 @@ class LoggingConfig:
         "loggers": {}
     }
 
-
-
     UVICORN_LOGGERS = {
         'uvicorn.error': {
             'propagate': False,
@@ -59,11 +57,12 @@ class LoggingConfig:
     def get_mode(self):
         # if no one set the mode - set default from ENV or hardcoded default
         if self._mode is None:
-            mode = LoggingModes.__members__.get(os.environ.get(ENV_VAR, "").upper(), LoggingModes.SIMPLE)
+            mode = LoggingModes.__members__.get(
+                os.environ.get(ENV_VAR, "").upper(), LoggingModes.SIMPLE)
             self.set_mode(mode)
         return self._mode
 
-    def set_mode(self, mode: LoggingMode = LoggingModes.UVICORN, level= logging.INFO):
+    def set_mode(self, mode: LoggingMode = LoggingModes.UVICORN, level=logging.INFO):
         """
         Configure logging. this method calls 'logging.config.dictConfig()' to enable quick setup of logging.
         Call this method before starting the app.
@@ -95,8 +94,8 @@ logging_config = LoggingConfig()
 
 def get_logger(name):
     """
-    Get a logger object to log with..
-    Called by inner modules for logging. 
+    Get a logger object to log with.
+    Called by inner modules for logging.
     """
     mode = logging_config.get_mode()
     # logging through loguru

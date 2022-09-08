@@ -6,7 +6,8 @@ import os
 import sys
 
 # Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+sys.path.append(os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.path.pardir)))
 
 from fastapi_websocket_rpc.utils import gen_uid
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
@@ -33,12 +34,13 @@ MESSAGE = "Good morning!"
 
 class ServerMethods(RpcMethodsBase):
 
-    async def register_wake_up_call(self, time_delta:float, name:str) -> str:
+    async def register_wake_up_call(self, time_delta: float, name: str) -> str:
         async def wake_up_call():
             await asyncio.sleep(time_delta)
             await self.channel.other.wake_up(message=MESSAGE, name=name)
         asyncio.create_task(wake_up_call())
         return True
+
 
 def setup_server():
     app = FastAPI()
@@ -78,7 +80,7 @@ class ClientMethods(RpcMethodsBase):
     async def wake_up(self, message=None, name=None):
         self.message = message
         self.name = name
-        #signal wake-up
+        # signal wake-up
         self.woke_up_event.set()
 
 @pytest.mark.asyncio
@@ -90,7 +92,7 @@ async def test_trigger_flow(server):
     async with WebSocketRpcClient(uri,
                                   ClientMethods(),
                                   default_response_timeout=4) as client:
-        time_delta=0.5
+        time_delta = 0.5
         name = "Logan Nine Fingers"
         # Ask for a wake up call
         await client.other.register_wake_up_call(time_delta=time_delta, name=name)
@@ -106,7 +108,7 @@ async def test_on_connect_trigger(server):
     """
     test cascading async trigger flow from client to sever and back staring with on_connect callback
     """
-    time_delta=0.5
+    time_delta = 0.5
     name = "Logan Nine Fingers"
 
     async def on_connect(channel):
