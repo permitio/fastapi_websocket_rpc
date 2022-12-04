@@ -4,7 +4,6 @@ Definition for an RPC channel protocol on top of a websocket - enabling bi-direc
 import asyncio
 from inspect import _empty, getmembers, ismethod, signature
 from typing import Any, Coroutine, Dict, List
-from asyncio.coroutines import coroutine
 
 from pydantic import ValidationError
 
