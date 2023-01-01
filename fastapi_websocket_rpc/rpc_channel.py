@@ -4,7 +4,6 @@ Definition for an RPC channel protocol on top of a websocket - enabling bi-direc
 import asyncio
 from inspect import _empty, getmembers, ismethod, signature
 from typing import Any, Coroutine, Dict, List
-from asyncio.coroutines import coroutine
 
 from pydantic import ValidationError
 
@@ -361,7 +360,7 @@ class RpcChannel:
         if timeout is DEFAULT_TIMEOUT:
             timeout = self.default_response_timeout
         # wait for the promise or until the channel is terminated
-        _, pending = await asyncio.wait([promise.wait(), self._closed.wait()], timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
+        _, pending = await asyncio.wait([asyncio.ensure_future(promise.wait()), asyncio.ensure_future(self._closed.wait())], timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
         # Cancel all pending futures and then detect if close was the first done
         for fut in pending:
             fut.cancel()
