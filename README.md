@@ -1,13 +1,3 @@
-
-# This is a fork
-
-This repo is fork, but we didn't go anywhere :)
-
-To the official repo, go here: [https://github.com/permitio/fastapi_websocket_rpc](https://github.com/permitio/fastapi_websocket_rpc)
-
-
-----
-
 <p align="center">
 <img src="https://i.ibb.co/m8jL6Zd/RPC.png" alt="RPC" border="0" width="50%" />
 </p>
