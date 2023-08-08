@@ -2,7 +2,6 @@ from typing import Dict, Generic, List, Optional, TypeVar
 from enum import Enum
 
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 UUID = str
 
@@ -16,7 +15,7 @@ class RpcRequest(BaseModel):
 ResponseT = TypeVar('ResponseT')
 
 
-class RpcResponse(GenericModel, Generic[ResponseT]):
+class RpcResponse(BaseModel, Generic[ResponseT]):
     result: ResponseT
     result_type: Optional[str]
     call_id: Optional[UUID] = None
