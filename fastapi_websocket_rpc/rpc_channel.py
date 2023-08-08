@@ -5,7 +5,7 @@ import asyncio
 from inspect import _empty, getmembers, ismethod, signature
 from typing import Any, Dict, List
 
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 from .logger import get_logger
 from .rpc_methods import EXPOSED_BUILT_IN_METHODS, NoResponse, RpcMethodsBase

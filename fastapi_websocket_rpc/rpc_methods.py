@@ -5,7 +5,7 @@ import typing
 import copy
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from .connection_manager import ConnectionManager
 from .schemas import RpcRequest, RpcResponse

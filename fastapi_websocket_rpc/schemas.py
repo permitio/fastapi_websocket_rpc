@@ -1,7 +1,7 @@
 from typing import Dict, Generic, List, Optional, TypeVar
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 UUID = str
 
