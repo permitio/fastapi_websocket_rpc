@@ -1,5 +1,5 @@
 fastapi>=0.78.0,<1
-pydantic>=1.9.1,<2
+pydantic>=1.9.1
 uvicorn>=0.17.6,<1
 websockets>=10.3,<11
 tenacity>=8.0.1,<9
