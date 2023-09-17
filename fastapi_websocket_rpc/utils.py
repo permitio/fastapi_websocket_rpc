@@ -72,13 +72,13 @@ def is_pydantic_pre_v2():
 
 def get_model_serializer():
     if is_pydantic_pre_v2():
-        return lambda model: model.json()
+        return lambda model, **kwargs: model.json(**kwargs)
     else:
-        return lambda model: model.model_dump_json()
+        return lambda model, **kwargs: model.model_dump_json(**kwargs)
 
 
 def get_model_parser():
     if is_pydantic_pre_v2():
-        return lambda model, data: model.parse_obj(data)
+        return lambda model, data, **kwargs: model.parse_obj(data, **kwargs)
     else:
-        return lambda model, data: model.model_validate(data)
+        return lambda model, data, **kwargs: model.model_validate(data, **kwargs)
