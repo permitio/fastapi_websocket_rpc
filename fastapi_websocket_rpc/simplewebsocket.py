@@ -8,6 +8,7 @@ class SimpleWebSocket(ABC):
     """
     Abstract base class for all websocket related wrappers.
     """
+
     @abstractmethod
     def send(self, msg):
         pass
