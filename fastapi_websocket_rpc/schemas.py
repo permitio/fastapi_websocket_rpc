@@ -18,7 +18,7 @@ ResponseT = TypeVar("ResponseT")
 
 
 # Check pydantic version to handle deprecated GenericModel
-if version.parse(pydantic.VERSION) < version.parse("2.0.0"):
+if is_pydantic_pre_v2():
     from pydantic.generics import GenericModel
 
     class RpcResponse(GenericModel, Generic[ResponseT]):
