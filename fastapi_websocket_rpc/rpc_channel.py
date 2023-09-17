@@ -217,7 +217,8 @@ class RpcChannel:
         This is the main function servers/clients using the channel need to call (upon reading a message on the wire)
         """
         try:
-            message = RpcMessage.parse_obj(data)
+            parse_model = get_model_parser()
+            message = parse_model(RpcMessage, data)
             if message.request is not None:
                 await self.on_request(message.request)
             if message.response is not None:

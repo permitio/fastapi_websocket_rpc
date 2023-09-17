@@ -26,7 +26,8 @@ class JsonSerializingWebSocket(SimpleWebSocket):
         self._websocket = websocket
 
     def _serialize(self, msg):
-        return msg.json()
+        serialize_model = get_model_serializer()
+        return serialize_model(msg)
 
     def _deserialize(self, buffer):
         return json.loads(buffer)
