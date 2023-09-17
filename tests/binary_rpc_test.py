@@ -3,8 +3,9 @@ import os
 import sys
 
 # Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(
-    os.path.dirname(__file__), os.path.pardir)))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+)
 
 import json
 from multiprocessing import Process
@@ -54,9 +55,11 @@ class BinarySerializingWebSocket(SimpleWebSocket):
 
 def setup_server():
     app = FastAPI()
-    endpoint = WebsocketRPCEndpoint(RpcUtilityMethods(),
-                                    frame_type=WebSocketFrameType.Binary,
-                                    serializing_socket_cls=BinarySerializingWebSocket)
+    endpoint = WebsocketRPCEndpoint(
+        RpcUtilityMethods(),
+        frame_type=WebSocketFrameType.Binary,
+        serializing_socket_cls=BinarySerializingWebSocket,
+    )
     endpoint.register_route(app)
     uvicorn.run(app, port=PORT)
 
@@ -69,12 +72,18 @@ def server():
     yield proc
     proc.kill()  # Cleanup after test
 
+
 @pytest.mark.asyncio
 async def test_echo(server):
     """
     Test basic RPC with a simple echo
     """
-    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, serializing_socket_cls=BinarySerializingWebSocket) as client:
+    async with WebSocketRpcClient(
+        uri,
+        RpcUtilityMethods(),
+        default_response_timeout=4,
+        serializing_socket_cls=BinarySerializingWebSocket,
+    ) as client:
         text = "Hello World!"
         response = await client.other.echo(text=text)
         assert response.result == text
@@ -86,7 +95,12 @@ async def test_structured_response(server):
     Test RPC with structured (pydantic model) data response
     Using process details as example data
     """
-    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, serializing_socket_cls=BinarySerializingWebSocket) as client:
+    async with WebSocketRpcClient(
+        uri,
+        RpcUtilityMethods(),
+        default_response_timeout=4,
+        serializing_socket_cls=BinarySerializingWebSocket,
+    ) as client:
         utils = RpcUtilityMethods()
         ourProcess = await utils.get_process_details()
         response = await client.other.get_process_details()
