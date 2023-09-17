@@ -3,15 +3,15 @@ Definition for an RPC channel protocol on top of a websocket - enabling bi-direc
 """
 import asyncio
 from inspect import _empty, getmembers, ismethod, signature
-from typing import Any, Coroutine, Dict, List
+from typing import Any, Dict, List
 
 from pydantic import ValidationError
 
-from .utils import gen_uid
+from .logger import get_logger
 from .rpc_methods import EXPOSED_BUILT_IN_METHODS, NoResponse, RpcMethodsBase
 from .schemas import RpcMessage, RpcRequest, RpcResponse
+from .utils import gen_uid, get_model_parser
 
-from .logger import get_logger
 logger = get_logger("RPC_CHANNEL")
 
 

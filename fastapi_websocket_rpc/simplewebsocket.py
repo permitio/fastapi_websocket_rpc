@@ -1,6 +1,7 @@
-from typing import Any
-from abc import ABC, abstractmethod
 import json
+from abc import ABC, abstractmethod
+
+from .utils import get_model_serializer
 
 
 class SimpleWebSocket(ABC):
