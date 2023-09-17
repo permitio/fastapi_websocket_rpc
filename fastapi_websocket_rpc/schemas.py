@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import Dict, Generic, Optional, TypeVar
 
-import pydantic
-from packaging import version
 from pydantic import BaseModel
+
+from .utils import is_pydantic_pre_v2
 
 UUID = str
 

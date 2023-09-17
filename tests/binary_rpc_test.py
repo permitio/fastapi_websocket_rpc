@@ -6,21 +6,20 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(
     os.path.dirname(__file__), os.path.pardir)))
 
-import asyncio
-from multiprocessing import Process
 import json
+from multiprocessing import Process
 
 import pytest
 import uvicorn
 from fastapi import FastAPI
 
+from fastapi_websocket_rpc import WebSocketFrameType
+from fastapi_websocket_rpc.logger import LoggingModes, logging_config
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
-from fastapi_websocket_rpc.logger import logging_config, LoggingModes
+from fastapi_websocket_rpc.simplewebsocket import SimpleWebSocket
+from fastapi_websocket_rpc.utils import get_model_serializer
 from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
-from fastapi_websocket_rpc.utils import gen_uid
-from fastapi_websocket_rpc.simplewebsocket import SimpleWebSocket
-from fastapi_websocket_rpc import WebSocketFrameType
 
 # Set debug logs (and direct all logs to UVICORN format)
 logging_config.set_mode(LoggingModes.UVICORN, logging.DEBUG)

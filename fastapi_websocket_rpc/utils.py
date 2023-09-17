@@ -5,7 +5,9 @@ import uuid
 from datetime import timedelta
 from random import SystemRandom, randrange
 
-__author__ = 'OrW'
+import pydantic
+from packaging import version
+
 
 
 class RandomUtils(object):
