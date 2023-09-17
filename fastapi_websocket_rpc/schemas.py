@@ -1,8 +1,9 @@
-from typing import Dict, Generic, List, Optional, TypeVar
 from enum import Enum
+from typing import Dict, Generic, Optional, TypeVar
 
+import pydantic
+from packaging import version
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 UUID = str
 
@@ -13,7 +14,8 @@ class RpcRequest(BaseModel):
     call_id: Optional[UUID] = None
 
 
-ResponseT = TypeVar('ResponseT')
+ResponseT = TypeVar("ResponseT")
+
 
 # Check pydantic version to handle deprecated GenericModel
 if version.parse(pydantic.VERSION) < version.parse("2.0.0"):
