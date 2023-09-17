@@ -15,11 +15,19 @@ class RpcRequest(BaseModel):
 
 ResponseT = TypeVar('ResponseT')
 
+# Check pydantic version to handle deprecated GenericModel
+if version.parse(pydantic.VERSION) < version.parse("2.0.0"):
+    from pydantic.generics import GenericModel
 
-class RpcResponse(GenericModel, Generic[ResponseT]):
-    result: ResponseT
-    result_type: Optional[str]
-    call_id: Optional[UUID] = None
+    class RpcResponse(GenericModel, Generic[ResponseT]):
+        result: ResponseT
+        result_type: Optional[str]
+
+else:
+
+    class RpcResponse(BaseModel, Generic[ResponseT]):
+        result: ResponseT
+        result_type: Optional[str]
 
 
 class RpcMessage(BaseModel):
