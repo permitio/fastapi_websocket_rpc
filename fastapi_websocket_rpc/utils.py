@@ -5,13 +5,16 @@ import uuid
 from datetime import timedelta
 from random import SystemRandom, randrange
 
-__author__ = 'OrW'
+import pydantic
+from packaging import version
+
+__author__ = "OrW"
 
 
 class RandomUtils(object):
     @staticmethod
     def gen_cookie_id():
-        return os.urandom(16).encode('hex')
+        return os.urandom(16).encode("hex")
 
     @staticmethod
     def gen_uid():
@@ -21,8 +24,10 @@ class RandomUtils(object):
     def gen_token(size=256):
         if size % 2 != 0:
             raise ValueError("Size in bits must be an even number.")
-        return uuid.UUID(int=SystemRandom().getrandbits(size/2)).hex + \
-            uuid.UUID(int=SystemRandom().getrandbits(size/2)).hex
+        return (
+            uuid.UUID(int=SystemRandom().getrandbits(size / 2)).hex
+            + uuid.UUID(int=SystemRandom().getrandbits(size / 2)).hex
+        )
 
     @staticmethod
     def random_datetime(start=None, end=None):
@@ -52,9 +57,28 @@ gen_token = RandomUtils.gen_token
 class StringUtils(object):
     @staticmethod
     def convert_camelcase_to_underscore(name, lower=True):
-        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        res = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1)
+        s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+        res = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1)
         if lower:
             return res.lower()
         else:
             return res.upper()
+
+
+# Helper methods for supporting Pydantic v1 and v2
+def is_pydantic_pre_v2():
+    return version.parse(pydantic.VERSION) < version.parse("2.0.0")
+
+
+def pydantic_serialize(model, **kwargs):
+    if is_pydantic_pre_v2():
+        return model.json(**kwargs)
+    else:
+        return model.model_dump_json(**kwargs)
+
+
+def pydantic_parse(model, data, **kwargs):
+    if is_pydantic_pre_v2():
+        return model.parse_obj(data, **kwargs)
+    else:
+        return model.model_validate(data, **kwargs)
