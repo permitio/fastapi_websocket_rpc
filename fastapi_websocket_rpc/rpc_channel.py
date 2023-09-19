@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from .logger import get_logger
 from .rpc_methods import EXPOSED_BUILT_IN_METHODS, NoResponse, RpcMethodsBase
 from .schemas import RpcMessage, RpcRequest, RpcResponse
-from .utils import gen_uid, get_model_parser
+from .utils import gen_uid, pydantic_parse
 
 logger = get_logger("RPC_CHANNEL")
 
@@ -237,8 +237,7 @@ class RpcChannel:
         This is the main function servers/clients using the channel need to call (upon reading a message on the wire)
         """
         try:
-            parse_model = get_model_parser()
-            message = parse_model(RpcMessage, data)
+            message = pydantic_parse(RpcMessage, data)
             if message.request is not None:
                 await self.on_request(message.request)
             if message.response is not None:
