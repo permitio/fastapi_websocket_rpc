@@ -1,7 +1,7 @@
 import json
 from abc import ABC, abstractmethod
 
-from .utils import get_model_serializer
+from .utils import pydantic_serialize
 
 
 class SimpleWebSocket(ABC):
@@ -27,8 +27,7 @@ class JsonSerializingWebSocket(SimpleWebSocket):
         self._websocket = websocket
 
     def _serialize(self, msg):
-        serialize_model = get_model_serializer()
-        return serialize_model(msg)
+        return pydantic_serialize(msg)
 
     def _deserialize(self, buffer):
         return json.loads(buffer)

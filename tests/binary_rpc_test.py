@@ -18,7 +18,7 @@ from fastapi_websocket_rpc import WebSocketFrameType
 from fastapi_websocket_rpc.logger import LoggingModes, logging_config
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
 from fastapi_websocket_rpc.simplewebsocket import SimpleWebSocket
-from fastapi_websocket_rpc.utils import get_model_serializer
+from fastapi_websocket_rpc.utils import pydantic_serialize
 from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 
@@ -35,8 +35,7 @@ class BinarySerializingWebSocket(SimpleWebSocket):
         self._websocket = websocket
 
     def _serialize(self, msg):
-        serialize_model = get_model_serializer()
-        return serialize_model(msg).encode()
+        return pydantic_serialize(msg).encode()
 
     def _deserialize(self, buffer):
         return json.loads(buffer.decode())
