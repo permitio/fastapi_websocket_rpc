@@ -70,15 +70,15 @@ def is_pydantic_pre_v2():
     return version.parse(pydantic.VERSION) < version.parse("2.0.0")
 
 
-def get_model_serializer():
+def pydantic_serialize(model, **kwargs):
     if is_pydantic_pre_v2():
-        return lambda model, **kwargs: model.json(**kwargs)
+        return model.json(**kwargs)
     else:
-        return lambda model, **kwargs: model.model_dump_json(**kwargs)
+        return model.model_dump_json(**kwargs)
 
 
-def get_model_parser():
+def pydantic_parse(model, data, **kwargs):
     if is_pydantic_pre_v2():
-        return lambda model, data, **kwargs: model.parse_obj(data, **kwargs)
+        return model.parse_obj(data, **kwargs)
     else:
-        return lambda model, data, **kwargs: model.model_validate(data, **kwargs)
+        return model.model_validate(data, **kwargs)
