@@ -12,9 +12,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name='fastapi_websocket_rpc',
-    version='0.1.24',
-    author='Or Weis',
+    name="fastapi_websocket_rpc",
+    version="0.1.25",
+    author="Or Weis",
     author_email="or@permit.io",
     description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",
     long_description_content_type="text/markdown",
@@ -26,8 +26,8 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
-        "Topic :: Internet :: WWW/HTTP :: WSGI"
+        "Topic :: Internet :: WWW/HTTP :: WSGI",
     ],
-    python_requires='>=3.7',
+    python_requires=">=3.7",
     install_requires=get_requirements(),
 )

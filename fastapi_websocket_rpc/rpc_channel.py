@@ -3,15 +3,15 @@ Definition for an RPC channel protocol on top of a websocket - enabling bi-direc
 """
 import asyncio
 from inspect import _empty, getmembers, ismethod, signature
-from typing import Any, Coroutine, Dict, List
+from typing import Any, Dict, List
 
 from pydantic import ValidationError
 
-from .utils import gen_uid
+from .logger import get_logger
 from .rpc_methods import EXPOSED_BUILT_IN_METHODS, NoResponse, RpcMethodsBase
 from .schemas import RpcMessage, RpcRequest, RpcResponse
+from .utils import gen_uid, pydantic_parse
 
-from .logger import get_logger
 logger = get_logger("RPC_CHANNEL")
 
 
@@ -31,6 +31,7 @@ class RpcChannelClosedException(Exception):
     """
     Raised when the channel is closed mid-operation
     """
+
     pass
 
 
@@ -92,11 +93,16 @@ class RpcCaller:
 
     def __init__(self, channel, methods=None) -> None:
         self._channel = channel
-        self._method_names = [method[0] for method in getmembers(
-            methods, lambda i: ismethod(i))] if methods is not None else None
+        self._method_names = (
+            [method[0] for method in getmembers(methods, lambda i: ismethod(i))]
+            if methods is not None
+            else None
+        )
 
     def __getattribute__(self, name: str):
-        if (not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS) and (self._method_names is None or name in self._method_names):
+        if (not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS) and (
+            self._method_names is None or name in self._method_names
+        ):
             return RpcProxy(self._channel, name)
         else:
             return super().__getattribute__(name)
@@ -124,7 +130,15 @@ class RpcChannel:
     e.g. answer = channel.other.add(a=1,b=1) will (For example) ask the other side to perform 1+1 and will return an RPC-response of 2
     """
 
-    def __init__(self, methods: RpcMethodsBase, socket, channel_id=None, default_response_timeout=None, sync_channel_id=False, **kwargs):
+    def __init__(
+        self,
+        methods: RpcMethodsBase,
+        socket,
+        channel_id=None,
+        default_response_timeout=None,
+        sync_channel_id=False,
+        **kwargs,
+    ):
         """
 
         Args:
@@ -177,12 +191,18 @@ class RpcChannel:
         The _channel_id_synced verify we have it
         Timeout exception can be raised if the value isn't available
         """
-        await asyncio.wait_for(self._channel_id_synced.wait(), self.default_response_timeout)
+        await asyncio.wait_for(
+            self._channel_id_synced.wait(), self.default_response_timeout
+        )
         return self._other_channel_id
 
     def get_return_type(self, method):
         method_signature = signature(method)
-        return method_signature.return_annotation if method_signature.return_annotation is not _empty else str
+        return (
+            method_signature.return_annotation
+            if method_signature.return_annotation is not _empty
+            else str
+        )
 
     async def send(self, data):
         """
@@ -217,14 +237,13 @@ class RpcChannel:
         This is the main function servers/clients using the channel need to call (upon reading a message on the wire)
         """
         try:
-            message = RpcMessage.parse_obj(data)
+            message = pydantic_parse(RpcMessage, data)
             if message.request is not None:
                 await self.on_request(message.request)
             if message.response is not None:
                 await self.on_response(message.response)
         except ValidationError as e:
-            logger.error(f"Failed to parse message", {
-                         'message': data, 'error': e})
+            logger.error(f"Failed to parse message", {"message": data, "error": e})
             await self.on_error(e)
         except Exception as e:
             await self.on_error(e)
@@ -267,7 +286,8 @@ class RpcChannel:
         """
         if self._sync_channel_id:
             self._get_other_channel_id_task = asyncio.create_task(
-                self._get_other_channel_id())
+                self._get_other_channel_id()
+            )
         await self.on_handler_event(self._connect_handlers, self)
 
     async def _get_other_channel_id(self):
@@ -277,7 +297,11 @@ class RpcChannel:
         """
         if self._other_channel_id is None:
             other_channel_id = await self.other._get_channel_id_()
-            self._other_channel_id = other_channel_id.result if other_channel_id and other_channel_id.result else None
+            self._other_channel_id = (
+                other_channel_id.result
+                if other_channel_id and other_channel_id.result
+                else None
+            )
             if self._other_channel_id is None:
                 raise RemoteValueError()
             # update asyncio event that we received remote channel id
@@ -303,11 +327,14 @@ class RpcChannel:
             message (RpcRequest): the RPC request with the method to call
         """
         # TODO add exception support (catch exceptions and pass to other side as response with errors)
-        logger.debug("Handling RPC request - %s",
-                     {'request': message, 'channel': self.id})
+        logger.debug(
+            "Handling RPC request - %s", {"request": message, "channel": self.id}
+        )
         method_name = message.method
         # Ignore "_" prefixed methods (except the built in "_ping_")
-        if (isinstance(method_name, str) and (not method_name.startswith("_") or method_name in EXPOSED_BUILT_IN_METHODS)):
+        if isinstance(method_name, str) and (
+            not method_name.startswith("_") or method_name in EXPOSED_BUILT_IN_METHODS
+        ):
             method = getattr(self.methods, method_name)
             if callable(method):
                 result = await method(**message.arguments)
@@ -317,8 +344,17 @@ class RpcChannel:
                     # if no type given - try to convert to string
                     if result_type is str and type(result) is not str:
                         result = str(result)
-                    response = RpcMessage(response=RpcResponse[result_type](
-                        call_id=message.call_id, result=result, result_type=getattr(result_type, "__name__", getattr(result_type, "_name", "unknown-type"))))
+                    response = RpcMessage(
+                        response=RpcResponse[result_type](
+                            call_id=message.call_id,
+                            result=result,
+                            result_type=getattr(
+                                result_type,
+                                "__name__",
+                                getattr(result_type, "_name", "unknown-type"),
+                            ),
+                        )
+                    )
                     await self.send(response)
 
     def get_saved_promise(self, call_id):
@@ -338,7 +374,7 @@ class RpcChannel:
         Args:
             response (RpcResponse): the received response
         """
-        logger.debug("Handling RPC response - %s", {'response': response})
+        logger.debug("Handling RPC response - %s", {"response": response})
         if response.call_id is not None and response.call_id in self.requests:
             self.responses[response.call_id] = response
             promise = self.requests[response.call_id]
@@ -360,7 +396,14 @@ class RpcChannel:
         if timeout is DEFAULT_TIMEOUT:
             timeout = self.default_response_timeout
         # wait for the promise or until the channel is terminated
-        _, pending = await asyncio.wait([asyncio.ensure_future(promise.wait()), asyncio.ensure_future(self._closed.wait())], timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
+        _, pending = await asyncio.wait(
+            [
+                asyncio.ensure_future(promise.wait()),
+                asyncio.ensure_future(self._closed.wait()),
+            ],
+            timeout=timeout,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
         # Cancel all pending futures and then detect if close was the first done
         for fut in pending:
             fut.cancel()
@@ -368,7 +411,8 @@ class RpcChannel:
         # if the channel was closed before we could finish
         if response is NoResponse:
             raise RpcChannelClosedException(
-                f"Channel Closed before RPC response for {promise.call_id} could be received")
+                f"Channel Closed before RPC response for {promise.call_id} could be received"
+            )
         self.clear_saved_call(promise.call_id)
         return response
 
@@ -382,9 +426,10 @@ class RpcChannel:
             call_id (string, optional): a UUID to use to track the call () - override only with true UUIDs
         """
         call_id = call_id or gen_uid()
-        msg = RpcMessage(request=RpcRequest(
-            method=name, arguments=args, call_id=call_id))
-        logger.debug("Calling RPC method - %s", {'message': msg})
+        msg = RpcMessage(
+            request=RpcRequest(method=name, arguments=args, call_id=call_id)
+        )
+        logger.debug("Calling RPC method - %s", {"message": msg})
         await self.send(msg)
         promise = self.requests[msg.request.call_id] = RpcPromise(msg.request)
         return promise

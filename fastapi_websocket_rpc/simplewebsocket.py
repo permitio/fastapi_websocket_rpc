@@ -1,12 +1,14 @@
-from typing import Any
-from abc import ABC, abstractmethod
 import json
+from abc import ABC, abstractmethod
+
+from .utils import pydantic_serialize
 
 
 class SimpleWebSocket(ABC):
     """
     Abstract base class for all websocket related wrappers.
     """
+
     @abstractmethod
     def send(self, msg):
         pass
@@ -25,7 +27,7 @@ class JsonSerializingWebSocket(SimpleWebSocket):
         self._websocket = websocket
 
     def _serialize(self, msg):
-        return msg.json()
+        return pydantic_serialize(msg)
 
     def _deserialize(self, buffer):
         return json.loads(buffer)
