@@ -53,8 +53,8 @@ class WebSocketClientHandler(SimpleWebSocket):
         return msg
 
     async def close(self, code: int = 1000):
-        if self._websocket is None:
-            # Case not opened yet, nothing to close.
+        if self._websocket is not None:
+            # Case opened, we have something to close.
             await self._websocket.close(code)
 
 class WebSocketsClientHandler(SimpleWebSocket):
@@ -88,7 +88,7 @@ class WebSocketsClientHandler(SimpleWebSocket):
 
     async def close(self, code: int = 1000):
         if self._websocket is not None:
-            # Case not opened yet, nothing to close.
+            # Case opened, we have something to close.
             await self._websocket.close(code)
 
 def isNotInvalidStatusCode(value):
