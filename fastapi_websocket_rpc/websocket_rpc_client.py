@@ -22,19 +22,20 @@ class WebSocketClientHandler(SimpleWebSocket):
     Handler that use https://websocket-client.readthedocs.io/en/latest module.
     This implementation supports HTTP proxy, though HTTP_PROXY and HTTPS_PROXY environment variable.
     This is not documented, but in code, see https://github.com/websocket-client/websocket-client/blob/master/websocket/_url.py#L163
-    The module is not written in coroutine: https://websocket-client.readthedocs.io/en/latest/threading.html#asyncio-library-usage, so 
-    as a workaround, the send/recv are called in "run_in_executor" method. This is not optimal in case these are blocking (low network I/O),
-    then this blocks the whole event loop.
+    The module is not written as coroutine: https://websocket-client.readthedocs.io/en/latest/threading.html#asyncio-library-usage, so 
+    as a workaround, the send/recv are called in "run_in_executor" method.
     TODO: remove this implementation after https://github.com/python-websockets/websockets/issues/364 is fixed and use WebSocketsClientHandler instead.
+
+    Note: the connect timeout, if not specified, is the default socket connect timeout, which could be around 2min, so a bit longer than WebSocketsClientHandler.
     """
     def __init__(self):
         self._websocket = None
 
     """
     Args:
-	**kwargs: Additional args passed to connect
-		  https://websocket-client.readthedocs.io/en/latest/examples.html#connection-options
-		  https://websocket-client.readthedocs.io/en/latest/core.html#websocket._core.WebSocket.connect
+        **kwargs: Additional args passed to connect
+            https://websocket-client.readthedocs.io/en/latest/examples.html#connection-options
+            https://websocket-client.readthedocs.io/en/latest/core.html#websocket._core.WebSocket.connect
     """
     async def connect(self, uri: str, **connect_kwargs):
         self._websocket = await asyncio.get_event_loop().run_in_executor(None, websocket.create_connection, uri, **connect_kwargs)
@@ -87,6 +88,10 @@ class WebSocketClientHandler(SimpleWebSocket):
             logger.exception("RPC Error")
             raise
 
+    async def isConnectionClosedException(self, exception: Exception) -> bool:
+        # websocket.WebSocketConnectionClosedException means remote host closed the connection or some network error happened
+        return isinstance(exception, websocket.WebSocketConnectionClosedException)
+
 
 class WebSocketsClientHandler(SimpleWebSocket):
     """
@@ -98,8 +103,8 @@ class WebSocketsClientHandler(SimpleWebSocket):
 
     """
     Args:
-	**kwargs: Additional args passed to connect
-                  https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#opening-a-connection
+        **kwargs: Additional args passed to connect
+            https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#opening-a-connection
     """
     async def connect(self, uri: str, **connect_kwargs):
         self._websocket = await websockets.connect(uri, **connect_kwargs)
@@ -147,6 +152,9 @@ class WebSocketsClientHandler(SimpleWebSocket):
         except Exception as err:
             logger.exception("RPC Error")
             raise
+
+    async def isConnectionClosedException(self, exception: Exception) -> bool:
+        return isinstance(exception, websockets.exceptions.ConnectionClosed)
 
 def isNotInvalidStatusCode(value):
     return not isinstance(value, InvalidStatusCode)
@@ -325,13 +333,13 @@ class WebSocketRpcClient:
         # task was canceled
         except asyncio.CancelledError:
             pass
-        #except websockets.exceptions.ConnectionClosed:
-        except websocket.WebSocketConnectionClosedException:
-            logger.info("Connection was terminated.")
-            await self.close()
-        except:
-            logger.exception("RPC Reader task failed")
-            raise
+        except Exception as err:
+            if self.ws.isConnectionClosedException(err):
+                logger.info("Connection was terminated.")
+                await self.close()
+            else:
+                logger.exception("RPC Reader task failed")
+                raise
 
     async def _keep_alive(self):
         try:
