@@ -3,4 +3,5 @@ packaging>=20.4
 pydantic>=1.9.1
 uvicorn>=0.17.6,<1
 websockets>=10.3,<11
+websocket-client>=1.6.4
 tenacity>=8.0.1,<9
