@@ -245,8 +245,6 @@ class WebSocketRpcClient:
             try:
                 logger.info(f"Trying server - {self.uri}")
                 # Start connection
-                #raw_ws = await websockets.connect(self.uri, **self.connect_kwargs)
-                #raw_ws = WebSocketClientSWS(websocket.create_connection(self.uri, **self.connect_kwargs))
                 raw_ws = self._websocket_client_handler_cls()
                 # Wrap socket in our serialization class
                 self.ws = self._serializing_socket_cls(raw_ws)
