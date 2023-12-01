@@ -57,6 +57,37 @@ class WebSocketClientHandler(SimpleWebSocket):
             # Case opened, we have something to close.
             await self._websocket.close(code)
 
+    async def handle_exception(self, exception: Exception):
+        try:
+            raise exception
+        # See https://websocket-client.readthedocs.io/en/latest/exceptions.html
+        except websocket._exceptions.WebSocketAddressException:
+            logger.info("websocket address info cannot be found")
+            raise
+        except websocket._exceptions.WebSocketBadStatusException:
+            logger.info("bad handshake status code")
+            raise
+        except websocket._exceptions.WebSocketConnectionClosedException:
+            logger.info("remote host closed the connection or some network error happened")
+            raise
+        except websocket._exceptions.WebSocketPayloadException:
+            logger.info(
+                f"WebSocket payload is invalid")
+            raise
+        except websocket._exceptions.WebSocketProtocolException:
+            logger.info(f"WebSocket protocol is invalid")
+            raise
+        except websocket._exceptions.WebSocketProxyException:
+            logger.info(f"proxy error occurred")
+            raise
+        except OSError as err:
+            logger.info("RPC Connection failed - %s", err)
+            raise
+        except Exception as err:
+            logger.exception("RPC Error")
+            raise
+
+
 class WebSocketsClientHandler(SimpleWebSocket):
     """
     Handler that use https://websockets.readthedocs.io/en/stable module.
@@ -90,6 +121,32 @@ class WebSocketsClientHandler(SimpleWebSocket):
         if self._websocket is not None:
             # Case opened, we have something to close.
             await self._websocket.close(code)
+
+    async def handle_exception(self, exception: Exception):
+        try:
+            raise exception
+        except ConnectionRefusedError:
+            logger.info("RPC connection was refused by server")
+            raise
+        except ConnectionClosedError:
+            logger.info("RPC connection lost")
+            raise
+        except ConnectionClosedOK:
+            logger.info("RPC connection closed")
+            raise
+        except InvalidStatusCode as err:
+            logger.info(
+                f"RPC Websocket failed - with invalid status code {err.status_code}")
+            raise
+        except WebSocketException as err:
+            logger.info(f"RPC Websocket failed - with {err}")
+            raise
+        except OSError as err:
+            logger.info("RPC Connection failed - %s", err)
+            raise
+        except Exception as err:
+            logger.exception("RPC Error")
+            raise
 
 def isNotInvalidStatusCode(value):
     return not isinstance(value, InvalidStatusCode)
@@ -217,28 +274,13 @@ class WebSocketRpcClient:
                     await self.channel.close()
                 self.cancel_tasks()
                 raise
-        except ConnectionRefusedError:
-            logger.info("RPC connection was refused by server")
-            raise
-        except ConnectionClosedError:
-            logger.info("RPC connection lost")
-            raise
-        except ConnectionClosedOK:
-            logger.info("RPC connection closed")
-            raise
-        except InvalidStatusCode as err:
-            logger.info(
-                f"RPC Websocket failed - with invalid status code {err.status_code}")
-            raise
-        except WebSocketException as err:
-            logger.info(f"RPC Websocket failed - with {err}")
-            raise
-        except OSError as err:
-            logger.info("RPC Connection failed - %s", err)
-            raise
         except Exception as err:
-            logger.exception("RPC Error")
-            raise
+            if self.ws is not None:
+                # Exception could be websocket client specific.
+                await self.ws.handle_exception(err)
+            else:
+                logger.exception("RPC Error")
+                raise
 
     async def __aenter__(self):
         if self.retry_config is False:
