@@ -1,29 +1,33 @@
 import asyncio
-import uvicorn
-from fastapi import FastAPI
-from fastapi_websocket_rpc import RpcMethodsBase, WebsocketRPCEndpoint,logger
 import random
 
-#Set debug logging
+import uvicorn
+from fastapi import FastAPI
+
+from fastapi_websocket_rpc import RpcMethodsBase, WebsocketRPCEndpoint, logger
+
+# Set debug logging
 logger.logging_config.set_mode(logger.LoggingModes.UVICORN, logger.logging.DEBUG)
+
 
 # Methods to expose to the clients
 class ConcatServer(RpcMethodsBase):
     async def concat(self, a="", b=""):
         # allow client to exit after some time after
-        asyncio.create_task(self.channel.other.allow_exit(delay=random.randint(1,4)))
+        asyncio.create_task(self.channel.other.allow_exit(delay=random.randint(1, 4)))
         # return calculated response
         return a + b
 
+
 async def on_connect(channel):
     # Wait a bit
-    await asyncio.sleep(1) 
+    await asyncio.sleep(1)
     # now tell the client it can start sending us queries
     asyncio.create_task(channel.other.allow_queries())
 
-    
+
 # Init the FAST-API app
-app =  FastAPI()
+app = FastAPI()
 # Create an endpoint and load it with the methods to expose
 endpoint = WebsocketRPCEndpoint(ConcatServer(), on_connect=[on_connect])
 # add the endpoint to the app

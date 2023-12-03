@@ -1,13 +1,6 @@
+import json
 import logging
 import os
-import sys
-
-# Add parent path to use local src as package for tests
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
-)
-
-import json
 from multiprocessing import Process
 
 import pytest
@@ -101,7 +94,7 @@ async def test_structured_response(server):
         serializing_socket_cls=BinarySerializingWebSocket,
     ) as client:
         utils = RpcUtilityMethods()
-        ourProcess = await utils.get_process_details()
+        await utils.get_process_details()
         response = await client.other.get_process_details()
         # We got a valid process id
         assert isinstance(response.result["pid"], int)
