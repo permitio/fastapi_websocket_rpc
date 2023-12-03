@@ -1,8 +1,7 @@
 import logging
-from logging import config
-from logging.config import dictConfig
 import os
 from enum import Enum
+from logging.config import dictConfig
 from typing import NewType
 
 ENV_VAR = "WS_RPC_LOGGING"
@@ -19,11 +18,10 @@ class LoggingModes(Enum):
     LOGURU = 3
 
 
-LoggingMode = NewType('LoggingMode', LoggingModes)
+LoggingMode = NewType("LoggingMode", LoggingModes)
 
 
 class LoggingConfig:
-
     def __init__(self) -> None:
         self._mode = None
 
@@ -43,33 +41,40 @@ class LoggingConfig:
                 "class": "logging.StreamHandler",
             },
         },
-        "loggers": {}
+        "loggers": {},
     }
 
     UVICORN_LOGGERS = {
-        'uvicorn.error': {
-            'propagate': False,
-            'handlers': ['default'],
+        "uvicorn.error": {
+            "propagate": False,
+            "handlers": ["default"],
         },
-        "fastapi_ws_rpc": {"handlers": ["default"], 'propagate': False, 'level': logging.INFO},
+        "fastapi_ws_rpc": {
+            "handlers": ["default"],
+            "propagate": False,
+            "level": logging.INFO,
+        },
     }
 
     def get_mode(self):
         # if no one set the mode - set default from ENV or hardcoded default
         if self._mode is None:
             mode = LoggingModes.__members__.get(
-                os.environ.get(ENV_VAR, "").upper(), LoggingModes.SIMPLE)
+                os.environ.get(ENV_VAR, "").upper(), LoggingModes.SIMPLE
+            )
             self.set_mode(mode)
         return self._mode
 
     def set_mode(self, mode: LoggingMode = LoggingModes.UVICORN, level=logging.INFO):
         """
-        Configure logging. this method calls 'logging.config.dictConfig()' to enable quick setup of logging.
-        Call this method before starting the app.
-        For more advanced cases use 'logging.config' directly (loggers used by this library are all nested under "fastapi_ws_rpc" logger name)
+        Configure logging. this method calls 'logging.config.dictConfig()' to enable
+        quick setup of logging. Call this method before starting the app.
+        For more advanced cases use 'logging.config' directly (loggers used by this
+        library are all nested under "fastapi_ws_rpc" logger name)
 
         Args:
-            mode (LoggingMode, optional): The mode to set logging to. Defaults to LoggingModes.UVICORN.
+            mode (LoggingMode, optional): The mode to set logging to. Defaults to
+            LoggingModes.UVICORN.
         """
         self._mode = mode
         logging_config = self.config_template.copy()

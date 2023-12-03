@@ -1,17 +1,10 @@
 import os
-import sys
-
-from websockets.exceptions import InvalidStatusCode
-
-# Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(
-    os.path.dirname(__file__), os.path.pardir)))
-
 from multiprocessing import Process
 
 import pytest
 import uvicorn
 from fastapi import APIRouter, Depends, FastAPI, Header, WebSocket
+from websockets.exceptions import InvalidStatusCode
 
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
 from fastapi_websocket_rpc.utils import gen_uid
@@ -26,7 +19,8 @@ uri = f"ws://localhost:{PORT}/ws/{CLIENT_ID}"
 # A 'secret' to be checked by the server
 SECRET_TOKEN = "fake-super-secret-token"
 
-async def check_token_header(websocket:WebSocket, x_token: str = Header(...)):
+
+async def check_token_header(websocket: WebSocket, x_token: str = Header(...)):
     if x_token != SECRET_TOKEN:
         await websocket.close(403)
     return None
@@ -38,11 +32,14 @@ def setup_server():
     endpoint = WebsocketRPCEndpoint(RpcUtilityMethods())
 
     @router.websocket("/ws/{client_id}")
-    async def websocket_rpc_endpoint(websocket: WebSocket, client_id: str, token=Depends(check_token_header)):
+    async def websocket_rpc_endpoint(
+        websocket: WebSocket, client_id: str, token=Depends(check_token_header)
+    ):
         await endpoint.main_loop(websocket, client_id)
 
     app.include_router(router)
     uvicorn.run(app, port=PORT)
+
 
 @pytest.fixture()
 def server():
@@ -58,7 +55,12 @@ async def test_valid_token(server):
     """
     Test basic RPC with a simple echo
     """
-    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, extra_headers=[("X-TOKEN", SECRET_TOKEN)]) as client:
+    async with WebSocketRpcClient(
+        uri,
+        RpcUtilityMethods(),
+        default_response_timeout=4,
+        extra_headers=[("X-TOKEN", SECRET_TOKEN)],
+    ) as client:
         text = "Hello World!"
         response = await client.other.echo(text=text)
         assert response.result == text
@@ -70,7 +72,12 @@ async def test_invalid_token(server):
     Test basic RPC with a simple echo
     """
     try:
-        async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, extra_headers=[("X-TOKEN", "bad-token")]) as client:
+        async with WebSocketRpcClient(
+            uri,
+            RpcUtilityMethods(),
+            default_response_timeout=4,
+            extra_headers=[("X-TOKEN", "bad-token")],
+        ) as client:
             assert client is not None
             # if we got here - the server didn't reject us
             assert False

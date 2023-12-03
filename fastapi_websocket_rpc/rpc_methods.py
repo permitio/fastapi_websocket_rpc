@@ -1,19 +1,16 @@
 import asyncio
+import copy
 import os
 import sys
 import typing
-import copy
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
-from .connection_manager import ConnectionManager
-from .schemas import RpcRequest, RpcResponse
 from .utils import gen_uid
 
 PING_RESPONSE = "pong"
 # list of internal methods that can be called from remote
-EXPOSED_BUILT_IN_METHODS = ['_ping_', '_get_channel_id_']
+EXPOSED_BUILT_IN_METHODS = ["_ping_", "_get_channel_id_"]
 # NULL default value - indicating no response was received
 
 
@@ -34,7 +31,8 @@ class RpcMethodsBase:
 
     def _set_channel_(self, channel):
         """
-        Allows the channel to share access to its functions to the methods once nested under it
+        Allows the channel to share access to its functions to the methods once
+        nested under it
         """
         self._channel = channel
 
@@ -43,7 +41,7 @@ class RpcMethodsBase:
         return self._channel
 
     def _copy_(self):
-        """ Simple copy ctor - overriding classes may need to override copy as well."""
+        """Simple copy ctor - overriding classes may need to override copy as well."""
         return copy.copy(self)
 
     async def _ping_(self) -> str:
@@ -84,8 +82,9 @@ class RpcUtilityMethods(RpcMethodsBase):
             # generate a uid we can use to track this request
             call_id = gen_uid()
             # Call async -  without waiting to avoid locking the event_loop
-            asyncio.create_task(self.channel.async_call(
-                method_name, args=args, call_id=call_id))
+            asyncio.create_task(
+                self.channel.async_call(method_name, args=args, call_id=call_id)
+            )
             # return the id- which can be used to check the response once it's received
             return call_id
 

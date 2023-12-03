@@ -1,26 +1,19 @@
 """
- Test for the classic design pattern - where a client registers on the server to receive future events
+Test for the classic design pattern -
+where a client registers on the server to receive future events
 """
-
-import os
-import sys
-
-# Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(
-    os.path.dirname(__file__), os.path.pardir)))
-
-from fastapi_websocket_rpc.utils import gen_uid
-from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
-from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
-from fastapi_websocket_rpc.rpc_methods import RpcMethodsBase
-from fastapi import (APIRouter, FastAPI,
-                     WebSocket)
-import uvicorn
-import pytest
-from multiprocessing import Process
 import asyncio
+import os
+from multiprocessing import Process
 
+import pytest
+import uvicorn
+from fastapi import APIRouter, FastAPI, WebSocket
 
+from fastapi_websocket_rpc.rpc_methods import RpcMethodsBase
+from fastapi_websocket_rpc.utils import gen_uid
+from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
+from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 
 # Configurable
 PORT = int(os.environ.get("PORT") or "9000")
@@ -32,12 +25,13 @@ MESSAGE = "Good morning!"
 
 ############################ Server ############################
 
-class ServerMethods(RpcMethodsBase):
 
+class ServerMethods(RpcMethodsBase):
     async def register_wake_up_call(self, time_delta: float, name: str) -> str:
         async def wake_up_call():
             await asyncio.sleep(time_delta)
             await self.channel.other.wake_up(message=MESSAGE, name=name)
+
         asyncio.create_task(wake_up_call())
         return True
 
@@ -70,7 +64,6 @@ def server():
 
 
 class ClientMethods(RpcMethodsBase):
-
     def __init__(self):
         super().__init__()
         self.woke_up_event = asyncio.Event()
@@ -83,15 +76,16 @@ class ClientMethods(RpcMethodsBase):
         # signal wake-up
         self.woke_up_event.set()
 
+
 @pytest.mark.asyncio
 async def test_trigger_flow(server):
     """
     test cascading async trigger flow from client to sever and back
     Request the server to call us back later
     """
-    async with WebSocketRpcClient(uri,
-                                  ClientMethods(),
-                                  default_response_timeout=4) as client:
+    async with WebSocketRpcClient(
+        uri, ClientMethods(), default_response_timeout=4
+    ) as client:
         time_delta = 0.5
         name = "Logan Nine Fingers"
         # Ask for a wake up call
@@ -106,7 +100,8 @@ async def test_trigger_flow(server):
 @pytest.mark.asyncio
 async def test_on_connect_trigger(server):
     """
-    test cascading async trigger flow from client to sever and back staring with on_connect callback
+    test cascading async trigger flow from client to sever and back staring with
+    on_connect callback
     """
     time_delta = 0.5
     name = "Logan Nine Fingers"
@@ -116,13 +111,10 @@ async def test_on_connect_trigger(server):
         await channel.other.register_wake_up_call(time_delta=time_delta, name=name)
         # Wait for our wake-up call (or fail on timeout)
 
-
-    async with WebSocketRpcClient(uri,
-                                  ClientMethods(),
-                                  on_connect=[on_connect],
-                                  default_response_timeout=4) as client:
+    async with WebSocketRpcClient(
+        uri, ClientMethods(), on_connect=[on_connect], default_response_timeout=4
+    ) as client:
         await asyncio.wait_for(client.methods.woke_up_event.wait(), 5)
         # Note: each channel has its own copy of the methods object
         assert client.channel.methods.name == name
         assert client.channel.methods.message == MESSAGE
-

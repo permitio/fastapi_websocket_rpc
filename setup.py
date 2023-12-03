@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 def get_requirements(env=""):
@@ -16,7 +16,7 @@ setup(
     version="0.1.25",
     author="Or Weis",
     author_email="or@permit.io",
-    description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",
+    description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",  # noqa: E501
     long_description_content_type="text/markdown",
     long_description=long_description,
     url="https://github.com/permitio/fastapi_websocket_rpc",
