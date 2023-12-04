@@ -75,24 +75,30 @@ class RpcPromise:
 
 
 class RpcProxy:
-    """
-    Helper class
-    provide a __call__ interface for an RPC method over a given channel
-    """
+    """Provides a proxy to a remote method on the other side of the channel."""
 
-    def __init__(self, channel, method_name) -> None:
-        self.method_name = method_name
+    def __init__(self, channel, method_name: str) -> None:
         self.channel = channel
+        self.method_name = method_name
 
-    def __call__(self, **kwds: Any) -> Any:
-        return self.channel.call(self.method_name, args=kwds)
+    def __call__(self, **kwargs: Any) -> Any:
+        """Calls the remote method with the given keyword arguments.
+
+        Parameters
+        ----------
+        kwargs : dict
+            Keyword arguments to pass to the remote method.
+
+        Returns
+        -------
+        Any
+            Return value of the remote method.
+        """
+        return self.channel.call(self.method_name, args=kwargs)
 
 
 class RpcCaller:
-    """
-    Helper class provide an object (aka other) with callable methods for each
-    remote method on the otherside
-    """
+    """Calls remote methods on the other side of the channel."""
 
     def __init__(self, channel, methods=None) -> None:
         self._channel = channel
@@ -103,12 +109,24 @@ class RpcCaller:
         )
 
     def __getattribute__(self, name: str):
-        if (not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS) and (
-            self._method_names is None or name in self._method_names
-        ):
+        """Returns an :class:`~fastapi_websocket_rpc.rpc_channel.RpcProxy` instance
+        for exposed and listed RPC methods.
+
+        Parameters
+        ----------
+        name : str
+            Name of the requested attribute (or RPC method).
+
+        Returns
+        -------
+        Any
+            Attribute or RPC method.
+        """
+        is_exposed = not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS
+        is_listed = self._method_names is None or name in self._method_names
+        if is_exposed and is_listed:
             return RpcProxy(self._channel, name)
-        else:
-            return super().__getattribute__(name)
+        return super().__getattribute__(name)
 
 
 # Callback signatures

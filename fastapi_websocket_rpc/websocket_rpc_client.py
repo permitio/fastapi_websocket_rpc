@@ -261,8 +261,9 @@ class WebSocketRpcClient:
                 attempt_count += 1
 
     async def ping(self):
-        logger.debug("Pinging server")
+        logger.debug("Pinging server...")
         answer = await self.channel.other._ping_()
+        logger.debug(f"Got ping response: {answer}")
         return answer
 
     def _cancel_keep_alive_task(self):
