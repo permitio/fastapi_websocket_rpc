@@ -94,13 +94,14 @@ class RpcProxy:
         Any
             Return value of the remote method.
         """
+        logger.debug("Calling RPC method: %s", self.method_name)
         return self.channel.call(self.method_name, args=kwargs)
 
 
 class RpcCaller:
     """Calls remote methods on the other side of the channel."""
 
-    def __init__(self, channel, methods=None) -> None:
+    def __init__(self, channel: "RpcChannel", methods=None) -> None:
         self._channel = channel
         self._method_names = (
             [method[0] for method in getmembers(methods, lambda i: ismethod(i))]
@@ -125,6 +126,7 @@ class RpcCaller:
         is_exposed = not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS
         is_listed = self._method_names is None or name in self._method_names
         if is_exposed and is_listed:
+            logger.debug("%s was detected to be a remote RPC method.", name)
             return RpcProxy(self._channel, name)
         return super().__getattribute__(name)
 
@@ -316,6 +318,7 @@ class RpcChannel:
         Run all callbacks from self._connect_handlers
         """
         if self._sync_channel_id:
+            logger.debug("Syncing channel ID...")
             self._get_other_channel_id_task = asyncio.create_task(
                 self._get_other_channel_id()
             )
@@ -328,19 +331,20 @@ class RpcChannel:
         to identify a connection without this sync
         """
         if self._other_channel_id is None:
+            logger.debug("No cached channel ID found, calling _get_channel_id_()...")
             other_channel_id = await self.other._get_channel_id_()
             self._other_channel_id = (
                 other_channel_id.result
                 if other_channel_id and other_channel_id.result
                 else None
             )
+            logger.debug("Got channel ID: %s", self._other_channel_id)
             if self._other_channel_id is None:
                 raise RemoteValueError()
             # update asyncio event that we received remote channel id
             self._channel_id_synced.set()
             return self._other_channel_id
-        else:
-            return self._other_channel_id
+        return self._other_channel_id
 
     async def on_disconnect(self):
         # disconnect happened - mark the channel as closed
