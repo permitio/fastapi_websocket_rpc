@@ -334,7 +334,7 @@ class WebSocketRpcClient:
         except asyncio.CancelledError:
             pass
         except Exception as err:
-            if self.ws.isConnectionClosedException(err):
+            if await self.ws.isConnectionClosedException(err):
                 logger.info("Connection was terminated.")
                 await self.close()
             else:
