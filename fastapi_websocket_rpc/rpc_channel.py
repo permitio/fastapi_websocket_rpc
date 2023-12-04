@@ -3,7 +3,7 @@ Definition for an RPC channel protocol on top of a websocket -
 enabling bi-directional request/response interactions
 """
 import asyncio
-from inspect import _empty, getmembers, ismethod, signature
+from inspect import _empty, signature
 from typing import Any, Dict, List
 
 from pydantic import ValidationError
@@ -103,15 +103,10 @@ class RpcCaller:
 
     def __init__(self, channel: "RpcChannel", methods=None) -> None:
         self._channel = channel
-        self._method_names = (
-            [method[0] for method in getmembers(methods, lambda i: ismethod(i))]
-            if methods is not None
-            else None
-        )
 
     def __getattribute__(self, name: str):
         """Returns an :class:`~fastapi_websocket_rpc.rpc_channel.RpcProxy` instance
-        for exposed and listed RPC methods.
+        for exposed RPC methods.
 
         Parameters
         ----------
@@ -124,8 +119,7 @@ class RpcCaller:
             Attribute or RPC method.
         """
         is_exposed = not name.startswith("_") or name in EXPOSED_BUILT_IN_METHODS
-        is_listed = self._method_names is None or name in self._method_names
-        if is_exposed and is_listed:
+        if is_exposed:
             logger.debug("%s was detected to be a remote RPC method.", name)
             return RpcProxy(self._channel, name)
         return super().__getattribute__(name)
