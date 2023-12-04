@@ -56,7 +56,8 @@ class WebSocketClientHandler(SimpleWebSocket):
     async def close(self, code: int = 1000):
         if self._websocket is not None:
             # Case opened, we have something to close.
-            await self._websocket.close(code)
+            #await asyncio.get_event_loop().run_in_executor(None, self._websocket.close,code)
+            self._websocket.close(code)
 
     async def handle_exception(self, exception: Exception):
         try:
