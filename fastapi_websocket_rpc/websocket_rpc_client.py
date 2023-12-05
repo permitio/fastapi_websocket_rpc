@@ -5,7 +5,6 @@ from tenacity import retry, wait
 import tenacity
 from tenacity.retry import retry_if_exception
 
-import websocket
 import websockets
 from websockets.exceptions import InvalidStatusCode, WebSocketException, ConnectionClosedError, ConnectionClosedOK
 
@@ -16,6 +15,11 @@ from .simplewebsocket import SimpleWebSocket, JsonSerializingWebSocket
 
 logger = get_logger("RPC_CLIENT")
 
+try:
+    import websocket
+except ImportError:
+    # Websocket-client optional module not installed.
+    pass
 
 class WebSocketClientHandler(SimpleWebSocket):
     """

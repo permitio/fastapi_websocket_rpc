@@ -154,7 +154,13 @@ logging_config.set_mode(LoggingModes.UVICORN)
 ```
 
 ## HTTP(S) Proxy
-By default, fastapi-websocket-rpc uses websockets module as websocket client handler. This does not support HTTP(S) Proxy, see https://github.com/python-websockets/websockets/issues/364 . If the ability to use a proxy is important to, another websocket client implementation can be used, e.g. websocket-client (https://websocket-client.readthedocs.io). Here is how to use it, by defining websocket_client_handler_cls parameter:
+By default, fastapi-websocket-rpc uses websockets module as websocket client handler. This does not support HTTP(S) Proxy, see https://github.com/python-websockets/websockets/issues/364 . If the ability to use a proxy is important to, another websocket client implementation can be used, e.g. websocket-client (https://websocket-client.readthedocs.io). Here is how to use it. Installation:
+
+```
+pip install websocket-client
+```
+
+Then use websocket_client_handler_cls parameter:
 
 ```python
 import asyncio
