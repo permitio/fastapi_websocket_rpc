@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 from typing import Dict, List, Type
 
 import tenacity
@@ -129,31 +130,38 @@ class WebSocketRpcClient:
     async def __connect__(self):
         try:
             try:
-                logger.info(f"Trying server - {self.uri}")
-                # Start connection
+                logger.info(f"Connecting to {self.uri}...")
+                # Create a WebSocket connection.
+                logger.debug(
+                    f"Creating a WebSocket connection to {self.uri} with parameters: {self.connect_kwargs}..."  # noqa: E501
+                )
                 raw_ws = await websockets.connect(self.uri, **self.connect_kwargs)
-                # Wrap socket in our serialization class
+                # Wrap the WebSocket connection with a wrapper for serializing
+                # and deserializing messages.
+                logger.debug(
+                    f"Wrapping WebSocket connection with {self._serializing_socket_cls.__name__}..."  # noqa: E501
+                )
                 self.ws = self._serializing_socket_cls(raw_ws)
-                # Init an RPC channel to work on-top of the connection
+                # Initialize an RPC channel to work on top of the connection.
                 self.channel = RpcChannel(
                     self.methods,
                     self.ws,
                     default_response_timeout=self.default_response_timeout,
                 )
-                # register handlers
+                # Register handlers.
                 self.channel.register_connect_handler(self._on_connect)
                 self.channel.register_disconnect_handler(self._on_disconnect)
-                # Start reading incoming RPC calls
+                # Start reading incoming RPC calls.
                 self._read_task = asyncio.create_task(self.reader())
-                # start keep alive (if enabled i.e. value isn't 0)
+                # Start keep alive (if enabled, i.e., value isn't 0).
                 self._start_keep_alive_task()
-                # Wait for RPC channel on the server to be ready (ping check)
+                # Wait for RPC channel on the server to be ready (ping check).
                 await self.wait_on_rpc_ready()
-                # trigger connect handlers
+                # Trigger connect signal handlers.
                 await self.channel.on_connect()
                 return self
             except:
-                # Clean partly initiated state on error
+                # Clean partly initiated state on error.
                 if self.ws is not None:
                     await self.ws.close()
                 if self.channel is not None:
@@ -194,10 +202,11 @@ class WebSocketRpcClient:
         await self.close()
 
     async def close(self):
-        logger.info("Closing RPC client")
+        logger.info("Closing RPC client...")
         # Close underlying connection
         if self.ws is not None:
-            await self.ws.close()
+            with suppress(RuntimeError):
+                await self.ws.close()
         # Notify callbacks (but just once)
         if not self.channel.isClosed():
             # notify handlers (if any)
@@ -218,22 +227,22 @@ class WebSocketRpcClient:
             self._read_task = None
 
     async def reader(self):
-        """
-        Read responses from socket worker
-        """
+        """Read responses from socket worker."""
         try:
             while True:
                 raw_message = await self.ws.recv()
+                logger.debug(f"Received raw message: {raw_message}")
                 await self.channel.on_message(raw_message)
         # Graceful external termination options
         # task was canceled
         except asyncio.CancelledError:
+            logger.info("RPC read task was cancelled.")
             pass
         except websockets.exceptions.ConnectionClosed:
             logger.info("Connection was terminated.")
             await self.close()
         except:
-            logger.exception("RPC Reader task failed")
+            logger.exception("RPC reader task failed.")
             raise
 
     async def _keep_alive(self):
@@ -278,6 +287,8 @@ class WebSocketRpcClient:
                 f"Starting keep alive task interval='{self._keep_alive_interval}' seconds"  # noqa: E501
             )
             self._keep_alive_task = asyncio.create_task(self._keep_alive())
+        else:
+            logger.debug('"Keep alive" is disabled')
 
     async def wait_on_reader(self):
         """

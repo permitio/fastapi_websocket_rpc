@@ -1,7 +1,10 @@
 import json
 from abc import ABC, abstractmethod
 
+from .logger import get_logger
 from .utils import pydantic_serialize
+
+logger = get_logger("fastapi_websocket_rpc.simplewebsocket")
 
 
 class SimpleWebSocket(ABC):
@@ -10,7 +13,7 @@ class SimpleWebSocket(ABC):
     """
 
     @abstractmethod
-    def send(self, msg):
+    def send(self, message):
         pass
 
     @abstractmethod
@@ -26,19 +29,21 @@ class JsonSerializingWebSocket(SimpleWebSocket):
     def __init__(self, websocket: SimpleWebSocket):
         self._websocket = websocket
 
-    def _serialize(self, msg):
-        return pydantic_serialize(msg)
+    def _serialize(self, message):
+        return pydantic_serialize(message)
 
     def _deserialize(self, buffer):
+        logger.debug(f"Deserializing message: {buffer}")
         return json.loads(buffer)
 
-    async def send(self, msg):
-        await self._websocket.send(self._serialize(msg))
+    async def send(self, message):
+        await self._websocket.send(self._serialize(message))
 
     async def recv(self):
-        msg = await self._websocket.recv()
-
-        return self._deserialize(msg)
+        logger.debug("Waiting for message...")
+        message = await self._websocket.recv()
+        logger.debug(f"Received message: {message}")
+        return self._deserialize(message)
 
     async def close(self, code: int = 1000):
         await self._websocket.close(code)

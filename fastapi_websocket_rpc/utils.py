@@ -8,7 +8,9 @@ from random import SystemRandom, randrange
 import pydantic
 from packaging import version
 
-__author__ = "OrW"
+from .logger import get_logger
+
+logger = get_logger("fastapi_websocket_rpc.utils")
 
 
 class RandomUtils(object):
@@ -78,7 +80,10 @@ def pydantic_serialize(model, **kwargs):
 
 
 def pydantic_parse(model, data, **kwargs):
+    logger.debug(f"Using pydantic to parse: {data}")
     if is_pydantic_pre_v2():
-        return model.parse_obj(data, **kwargs)
+        parsed_data = model.parse_obj(data, **kwargs)
     else:
-        return model.model_validate(data, **kwargs)
+        parsed_data = model.model_validate(data, **kwargs)
+    logger.debug(f"Pydantic parsed data: {parsed_data}")
+    return parsed_data

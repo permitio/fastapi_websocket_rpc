@@ -171,6 +171,7 @@ class RpcChannel:
             channel id, helps to identify connections, cost a bit networking time.
                 Defaults to False - i.e. not getting the other side channel id
         """
+        logger.debug("Initializing RPC channel...")
         self.methods = methods._copy_()
         # allow methods to access channel (for recursive calls - e.g. call me as
         # a response for me calling you)
@@ -203,6 +204,7 @@ class RpcChannel:
 
         # any other kwarg goes straight to channel context (Accessible to methods)
         self._context = kwargs or {}
+        logger.debug("RPC channel initialized.")
 
     @property
     def context(self) -> Dict[str, Any]:
@@ -255,11 +257,8 @@ class RpcChannel:
         return await self._closed.wait()
 
     async def on_message(self, data):
-        """
-        Handle an incoming RPC message
-        This is the main function servers/clients using the channel need to
-        call (upon reading a message on the wire)
-        """
+        """Handle an incoming RPC message."""
+        logger.debug(f"Processing received message: {data}")
         try:
             message = pydantic_parse(RpcMessage, data)
             if message.request is not None:
@@ -358,9 +357,7 @@ class RpcChannel:
         """
         # TODO add exception support (catch exceptions and pass to other side
         # as response with errors)
-        logger.debug(
-            "Handling RPC request - %s", {"request": message, "channel": self.id}
-        )
+        logger.debug(f"Handling RPC request on channel {self.id}: {message}")
         method_name = message.method
         # Ignore "_" prefixed methods (except the built in "_ping_")
         if isinstance(method_name, str) and (
@@ -464,12 +461,12 @@ class RpcChannel:
             override only with true UUIDs
         """
         call_id = call_id or gen_uid()
-        msg = RpcMessage(
+        message = RpcMessage(
             request=RpcRequest(method=name, arguments=args, call_id=call_id)
         )
-        logger.debug("Calling RPC method - %s", {"message": msg})
-        await self.send(msg)
-        promise = self.requests[msg.request.call_id] = RpcPromise(msg.request)
+        logger.debug("Sending the following RPC message: %s", message)
+        await self.send(message)
+        promise = self.requests[message.request.call_id] = RpcPromise(message.request)
         return promise
 
     async def call(self, name, args={}, timeout=DEFAULT_TIMEOUT):
