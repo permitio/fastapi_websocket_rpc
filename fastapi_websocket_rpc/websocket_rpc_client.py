@@ -54,7 +54,11 @@ class WebSocketClientHandler(SimpleWebSocket):
         if self._websocket is None:
             # connect must be called before.
             logging.error("Websocket connect() must be called before.")
-        msg = await asyncio.get_event_loop().run_in_executor(None, self._websocket.recv)
+        try:
+            msg = await asyncio.get_event_loop().run_in_executor(None, self._websocket.recv)
+        except websocket.WebSocketConnectionClosedException as err:
+            # websocket.WebSocketConnectionClosedException means remote host closed the connection or some network error happened
+            raise BaseConnectionClosedException from err
         return msg
 
     async def close(self, code: int = 1000):
@@ -92,11 +96,6 @@ class WebSocketClientHandler(SimpleWebSocket):
             logger.exception("RPC Error")
             raise
 
-    async def isConnectionClosedException(self, exception: Exception) -> bool:
-        # websocket.WebSocketConnectionClosedException means remote host closed the connection or some network error happened
-        return isinstance(exception, websocket.WebSocketConnectionClosedException)
-
-
 class WebSocketsClientHandler(SimpleWebSocket):
     """
     Handler that use https://websockets.readthedocs.io/en/stable module.
@@ -123,7 +122,10 @@ class WebSocketsClientHandler(SimpleWebSocket):
         if self._websocket is None:
             # connect must be called before.
             logging.error("Websocket connect() must be called before.")
-        msg = await self._websocket.recv()
+        try:
+            msg = await self._websocket.recv()
+        except websockets.exceptions.ConnectionClosed as err:
+            raise BaseConnectionClosedException from err
         return msg
 
     async def close(self, code: int = 1000):
@@ -156,9 +158,6 @@ class WebSocketsClientHandler(SimpleWebSocket):
         except Exception as err:
             logger.exception("RPC Error")
             raise
-
-    async def isConnectionClosedException(self, exception: Exception) -> bool:
-        return isinstance(exception, websockets.exceptions.ConnectionClosed)
 
 def isNotInvalidStatusCode(value):
     return not isinstance(value, InvalidStatusCode)
@@ -337,13 +336,12 @@ class WebSocketRpcClient:
         # task was canceled
         except asyncio.CancelledError:
             pass
+        except BaseConnectionClosedException:
+            logger.info("Connection was terminated.")
+            await self.close()
         except Exception as err:
-            if await self.ws.isConnectionClosedException(err):
-                logger.info("Connection was terminated.")
-                await self.close()
-            else:
-                logger.exception("RPC Reader task failed")
-                raise
+            logger.exception("RPC Reader task failed")
+            raise
 
     async def _keep_alive(self):
         try:
