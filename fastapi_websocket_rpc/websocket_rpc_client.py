@@ -42,35 +42,8 @@ class WebSocketClientHandler(SimpleWebSocket):
             https://websocket-client.readthedocs.io/en/latest/core.html#websocket._core.WebSocket.connect
     """
     async def connect(self, uri: str, **connect_kwargs):
-        self._websocket = await asyncio.get_event_loop().run_in_executor(None, websocket.create_connection, uri, **connect_kwargs)
-
-    async def send(self, msg):
-        if self._websocket is None:
-            # connect must be called before.
-            logging.error("Websocket connect() must be called before.")
-        await asyncio.get_event_loop().run_in_executor(None, self._websocket.send, msg)
-
-    async def recv(self):
-        if self._websocket is None:
-            # connect must be called before.
-            logging.error("Websocket connect() must be called before.")
         try:
-            msg = await asyncio.get_event_loop().run_in_executor(None, self._websocket.recv)
-        except websocket.WebSocketConnectionClosedException as err:
-            logger.debug("Connection closed.", exc_info=True)
-            # websocket.WebSocketConnectionClosedException means remote host closed the connection or some network error happened
-            # Returning None to ensure we get out of the loop, with no Exception.
-            return None
-        return msg
-
-    async def close(self, code: int = 1000):
-        if self._websocket is not None:
-            # Case opened, we have something to close.
-            self._websocket.close(code)
-
-    async def handle_exception(self, exception: Exception):
-        try:
-            raise exception
+            self._websocket = await asyncio.get_event_loop().run_in_executor(None, websocket.create_connection, uri, **connect_kwargs)
         # See https://websocket-client.readthedocs.io/en/latest/exceptions.html
         except websocket._exceptions.WebSocketAddressException:
             logger.info("websocket address info cannot be found")
@@ -98,6 +71,30 @@ class WebSocketClientHandler(SimpleWebSocket):
             logger.exception("RPC Error")
             raise
 
+    async def send(self, msg):
+        if self._websocket is None:
+            # connect must be called before.
+            logging.error("Websocket connect() must be called before.")
+        await asyncio.get_event_loop().run_in_executor(None, self._websocket.send, msg)
+
+    async def recv(self):
+        if self._websocket is None:
+            # connect must be called before.
+            logging.error("Websocket connect() must be called before.")
+        try:
+            msg = await asyncio.get_event_loop().run_in_executor(None, self._websocket.recv)
+        except websocket.WebSocketConnectionClosedException as err:
+            logger.debug("Connection closed.", exc_info=True)
+            # websocket.WebSocketConnectionClosedException means remote host closed the connection or some network error happened
+            # Returning None to ensure we get out of the loop, with no Exception.
+            return None
+        return msg
+
+    async def close(self, code: int = 1000):
+        if self._websocket is not None:
+            # Case opened, we have something to close.
+            self._websocket.close(code)
+
 class WebSocketsClientHandler(SimpleWebSocket):
     """
     Handler that use https://websockets.readthedocs.io/en/stable module.
@@ -112,33 +109,8 @@ class WebSocketsClientHandler(SimpleWebSocket):
             https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#opening-a-connection
     """
     async def connect(self, uri: str, **connect_kwargs):
-        self._websocket = await websockets.connect(uri, **connect_kwargs)
-
-    async def send(self, msg):
-        if self._websocket is None:
-            # connect must be called before.
-            logging.error("Websocket connect() must be called before.")
-        await self._websocket.send(msg)
-
-    async def recv(self):
-        if self._websocket is None:
-            # connect must be called before.
-            logging.error("Websocket connect() must be called before.")
         try:
-            msg = await self._websocket.recv()
-        except websockets.exceptions.ConnectionClosed:
-            logger.debug("Connection closed.", exc_info=True)
-            return None
-        return msg
-
-    async def close(self, code: int = 1000):
-        if self._websocket is not None:
-            # Case opened, we have something to close.
-            self._websocket.close(code)
-
-    async def handle_exception(self, exception: Exception):
-        try:
-            raise exception
+            self._websocket = await websockets.connect(uri, **connect_kwargs)
         except ConnectionRefusedError:
             logger.info("RPC connection was refused by server")
             raise
@@ -161,6 +133,28 @@ class WebSocketsClientHandler(SimpleWebSocket):
         except Exception as err:
             logger.exception("RPC Error")
             raise
+
+    async def send(self, msg):
+        if self._websocket is None:
+            # connect must be called before.
+            logging.error("Websocket connect() must be called before.")
+        await self._websocket.send(msg)
+
+    async def recv(self):
+        if self._websocket is None:
+            # connect must be called before.
+            logging.error("Websocket connect() must be called before.")
+        try:
+            msg = await self._websocket.recv()
+        except websockets.exceptions.ConnectionClosed:
+            logger.debug("Connection closed.", exc_info=True)
+            return None
+        return msg
+
+    async def close(self, code: int = 1000):
+        if self._websocket is not None:
+            # Case opened, we have something to close.
+            self._websocket.close(code)
 
 def isNotInvalidStatusCode(value):
     return not isinstance(value, InvalidStatusCode)
@@ -287,12 +281,8 @@ class WebSocketRpcClient:
                 self.cancel_tasks()
                 raise
         except Exception as err:
-            if self.ws is not None:
-                # Exception could be websocket client specific.
-                await self.ws.handle_exception(err)
-            else:
-                logger.exception("RPC Error")
-                raise
+            logger.exception("RPC Error")
+            raise
 
     async def __aenter__(self):
         if self.retry_config is False:
