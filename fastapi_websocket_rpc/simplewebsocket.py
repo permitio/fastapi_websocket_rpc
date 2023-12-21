@@ -4,12 +4,6 @@ from abc import ABC, abstractmethod
 from .utils import pydantic_serialize
 
 
-class BaseConnectionClosedException(Exception):
-    """
-    Base exception related to closed TCP connection.
-    """
-    pass
-
 class SimpleWebSocket(ABC):
     """
     Abstract base class for all websocket related wrappers.
@@ -23,7 +17,7 @@ class SimpleWebSocket(ABC):
     def send(self, msg):
         pass
 
-    # This is where BaseConnectionClosedException can be thrown.
+    # If return None, then it means Connection is closed, and we stop receiving and close.
     @abstractmethod
     def recv(self):
         pass
@@ -55,7 +49,8 @@ class JsonSerializingWebSocket(SimpleWebSocket):
 
     async def recv(self):
         msg = await self._websocket.recv()
-
+        if msg is None:
+            return None
         return self._deserialize(msg)
 
     async def close(self, code: int = 1000):

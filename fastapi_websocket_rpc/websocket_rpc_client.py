@@ -57,8 +57,10 @@ class WebSocketClientHandler(SimpleWebSocket):
         try:
             msg = await asyncio.get_event_loop().run_in_executor(None, self._websocket.recv)
         except websocket.WebSocketConnectionClosedException as err:
+            logger.debug("Connection closed.", exc_info=True)
             # websocket.WebSocketConnectionClosedException means remote host closed the connection or some network error happened
-            raise BaseConnectionClosedException from err
+            # Returning None to ensure we get out of the loop, with no Exception.
+            return None
         return msg
 
     async def close(self, code: int = 1000):
@@ -124,8 +126,9 @@ class WebSocketsClientHandler(SimpleWebSocket):
             logging.error("Websocket connect() must be called before.")
         try:
             msg = await self._websocket.recv()
-        except websockets.exceptions.ConnectionClosed as err:
-            raise BaseConnectionClosedException from err
+        except websockets.exceptions.ConnectionClosed:
+            logger.debug("Connection closed.", exc_info=True)
+            return None
         return msg
 
     async def close(self, code: int = 1000):
@@ -331,14 +334,17 @@ class WebSocketRpcClient:
         try:
             while True:
                 raw_message = await self.ws.recv()
-                await self.channel.on_message(raw_message)
+                if raw_message is None:
+                    # None is a special case where connection is closed.
+                    logger.info("Connection was terminated.")
+                    await self.close()
+                    break
+                else:
+                    await self.channel.on_message(raw_message)
         # Graceful external termination options
         # task was canceled
         except asyncio.CancelledError:
             pass
-        except BaseConnectionClosedException:
-            logger.info("Connection was terminated.")
-            await self.close()
         except Exception as err:
             logger.exception("RPC Reader task failed")
             raise
