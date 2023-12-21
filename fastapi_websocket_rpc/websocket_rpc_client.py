@@ -21,7 +21,7 @@ except ImportError:
     # Websocket-client optional module not installed.
     pass
 
-class WebSocketClientHandler(SimpleWebSocket):
+class ProxyEnabledWebSocketClientHandler (SimpleWebSocket):
     """
     Handler that use https://websocket-client.readthedocs.io/en/latest module.
     This implementation supports HTTP proxy, though HTTP_PROXY and HTTPS_PROXY environment variable.

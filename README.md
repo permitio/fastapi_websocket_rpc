@@ -164,10 +164,10 @@ Then use websocket_client_handler_cls parameter:
 
 ```python
 import asyncio
-from fastapi_websocket_rpc import RpcMethodsBase, WebSocketRpcClient, WebSocketClientHandler
+from fastapi_websocket_rpc import RpcMethodsBase, WebSocketRpcClient, ProxyEnabledWebSocketClientHandler
 
 async def run_client(uri):
-    async with WebSocketRpcClient(uri, RpcMethodsBase(), websocket_client_handler_cls = WebSocketClientHandler) as client:
+    async with WebSocketRpcClient(uri, RpcMethodsBase(), websocket_client_handler_cls = ProxyEnabledWebSocketClientHandler) as client:
 ```
 
 Just set standard environment variables (lowercase and uppercase works): http_proxy, https_proxy, and no_proxy before running python script.
