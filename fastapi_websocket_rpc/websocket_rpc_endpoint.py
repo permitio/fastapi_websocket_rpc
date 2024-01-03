@@ -21,6 +21,10 @@ class WebSocketSimplifier(SimpleWebSocket):
         self.websocket = websocket
         self.frame_type = frame_type
 
+    # This method is only useful on websocket_rpc_client. Here on endpoint file, it has nothing to connect to.
+    def connect(self, uri: str, **connect_kwargs):
+        pass
+
     @property
     def send(self):
         if self.frame_type == WebSocketFrameType.Binary:
