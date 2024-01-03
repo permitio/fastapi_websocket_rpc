@@ -249,14 +249,20 @@ class WebSocketRpcClient:
         self._websocket_client_handler_cls = websocket_client_handler_cls
 
     async def __connect__(self):
+        logger.info(f"Trying server - {self.uri}")
+        try:
+            raw_ws = self._websocket_client_handler_cls()
+            # Wrap socket in our serialization class
+            self.ws = self._serializing_socket_cls(raw_ws)
+        except:
+            logger.exception("Class instantiation error.")
+            raise
+        # No try/catch for connect() to avoid double error logging. Any exception from the method must be handled by
+        # itself for logging, then raised and caught outside of connect() (e.g.: for retry purpose).
+        # Start connection 
+        await self.ws.connect(self.uri, **self.connect_kwargs)
         try:
             try:
-                logger.info(f"Trying server - {self.uri}")
-                # Start connection
-                raw_ws = self._websocket_client_handler_cls()
-                # Wrap socket in our serialization class
-                self.ws = self._serializing_socket_cls(raw_ws)
-                await self.ws.connect(self.uri, **self.connect_kwargs)
                 # Init an RPC channel to work on-top of the connection
                 self.channel = RpcChannel(
                     self.methods, self.ws, default_response_timeout=self.default_response_timeout)
