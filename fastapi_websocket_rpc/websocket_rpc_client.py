@@ -83,7 +83,7 @@ class ProxyEnabledWebSocketClientHandler (SimpleWebSocket):
             logging.error("Websocket connect() must be called before.")
         try:
             msg = await asyncio.get_event_loop().run_in_executor(None, self._websocket.recv)
-        except websocket.WebSocketConnectionClosedException as err:
+        except websocket._exceptions.WebSocketConnectionClosedException as err:
             logger.debug("Connection closed.", exc_info=True)
             # websocket.WebSocketConnectionClosedException means remote host closed the connection or some network error happened
             # Returning None to ensure we get out of the loop, with no Exception.
