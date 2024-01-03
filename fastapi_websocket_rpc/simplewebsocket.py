@@ -26,10 +26,6 @@ class SimpleWebSocket(ABC):
     def close(self, code: int = 1000):
         pass
 
-    @abstractmethod
-    def handle_exception(self, exception: Exception):
-        pass
-
 
 class JsonSerializingWebSocket(SimpleWebSocket):
     def __init__(self, websocket: SimpleWebSocket):
@@ -55,8 +51,4 @@ class JsonSerializingWebSocket(SimpleWebSocket):
 
     async def close(self, code: int = 1000):
         await self._websocket.close(code)
-
-    async def handle_exception(self, exception: Exception):
-        await self._websocket.handle_exception(exception)
-
 
