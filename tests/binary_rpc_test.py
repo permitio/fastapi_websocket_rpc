@@ -31,6 +31,9 @@ class BinarySerializingWebSocket(SimpleWebSocket):
     def __init__(self, websocket: SimpleWebSocket):
         self._websocket = websocket
 
+    async def connect(self, uri: str, **connect_kwargs):
+        await self._websocket.connect(uri, **connect_kwargs)
+
     def _serialize(self, msg):
         return pydantic_serialize(msg).encode()
 
