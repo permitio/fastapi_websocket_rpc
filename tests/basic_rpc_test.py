@@ -10,7 +10,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
-from fastapi_websocket_rpc.logger import logging_config, LoggingModes
+from fastapi_websocket_rpc.logger import logging_config, LoggingModes, get_logger
 from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 from fastapi_websocket_rpc.utils import gen_uid

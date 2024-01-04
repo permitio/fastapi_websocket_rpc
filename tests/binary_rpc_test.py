@@ -10,7 +10,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from fastapi_websocket_rpc import WebSocketFrameType
-from fastapi_websocket_rpc.logger import LoggingModes, logging_config
+from fastapi_websocket_rpc.logger import LoggingModes, logging_config, get_logger
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
 from fastapi_websocket_rpc.simplewebsocket import SimpleWebSocket
 from fastapi_websocket_rpc.utils import pydantic_serialize
@@ -19,6 +19,8 @@ from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 
 # Set debug logs (and direct all logs to UVICORN format)
 logging_config.set_mode(LoggingModes.UVICORN, logging.DEBUG)
+
+logger = get_logger(__name__)
 
 # Configurable
 PORT = int(os.environ.get("PORT") or "9000")
@@ -72,14 +74,18 @@ async def test_echo(server):
     """
     Test basic RPC with a simple echo
     """
+    logger.debug("before test_echo")
     async with WebSocketRpcClient(
         uri,
         RpcUtilityMethods(),
         default_response_timeout=4,
         serializing_socket_cls=BinarySerializingWebSocket,
     ) as client:
+        logger.debug("Initialized WebSocketRpcClient")
         text = "Hello World!"
+        logger.debug("Waiting for response...")
         response = await client.other.echo(text=text)
+        logger.debug("Response: %s", str(response))
         assert response.result == text
 
 
