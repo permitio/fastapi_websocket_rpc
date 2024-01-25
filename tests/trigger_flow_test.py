@@ -5,10 +5,6 @@
 import os
 import sys
 
-# Add parent path to use local src as package for tests
-sys.path.append(os.path.abspath(os.path.join(
-    os.path.dirname(__file__), os.path.pardir)))
-
 from fastapi_websocket_rpc.utils import gen_uid
 from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 from fastapi_websocket_rpc.websocket_rpc_client import WebSocketRpcClient

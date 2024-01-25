@@ -2,11 +2,6 @@ import logging
 import os
 import sys
 
-# Add parent path to use local src as package for tests
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
-)
-
 import json
 from multiprocessing import Process
 
@@ -15,7 +10,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from fastapi_websocket_rpc import WebSocketFrameType
-from fastapi_websocket_rpc.logger import LoggingModes, logging_config
+from fastapi_websocket_rpc.logger import LoggingModes, logging_config, get_logger
 from fastapi_websocket_rpc.rpc_methods import RpcUtilityMethods
 from fastapi_websocket_rpc.simplewebsocket import SimpleWebSocket
 from fastapi_websocket_rpc.utils import pydantic_serialize
@@ -25,6 +20,8 @@ from fastapi_websocket_rpc.websocket_rpc_endpoint import WebsocketRPCEndpoint
 # Set debug logs (and direct all logs to UVICORN format)
 logging_config.set_mode(LoggingModes.UVICORN, logging.DEBUG)
 
+logger = get_logger(__name__)
+
 # Configurable
 PORT = int(os.environ.get("PORT") or "9000")
 uri = f"ws://localhost:{PORT}/ws"
@@ -33,6 +30,9 @@ uri = f"ws://localhost:{PORT}/ws"
 class BinarySerializingWebSocket(SimpleWebSocket):
     def __init__(self, websocket: SimpleWebSocket):
         self._websocket = websocket
+
+    async def connect(self, uri: str, **connect_kwargs):
+        await self._websocket.connect(uri, **connect_kwargs)
 
     def _serialize(self, msg):
         return pydantic_serialize(msg).encode()
@@ -77,14 +77,18 @@ async def test_echo(server):
     """
     Test basic RPC with a simple echo
     """
+    logger.debug("before test_echo")
     async with WebSocketRpcClient(
         uri,
         RpcUtilityMethods(),
         default_response_timeout=4,
         serializing_socket_cls=BinarySerializingWebSocket,
     ) as client:
+        logger.debug("Initialized WebSocketRpcClient")
         text = "Hello World!"
+        logger.debug("Waiting for response...")
         response = await client.other.echo(text=text)
+        logger.debug("Response: %s", str(response))
         assert response.result == text
 
 
