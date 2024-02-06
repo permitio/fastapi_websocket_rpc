@@ -1,4 +1,4 @@
-fastapi>=0.78.0,<1
+fastapi>=0.109.1,<1
 packaging>=20.4
 pydantic>=1.9.1
 uvicorn>=0.17.6,<1
