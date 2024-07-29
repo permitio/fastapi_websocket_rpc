@@ -107,14 +107,6 @@ class WebsocketRPCEndpoint:
         self.manager.disconnect(websocket)
         await channel.on_disconnect()
 
-    async def on_connect(self, channel, websocket):
-        """
-        Called upon new client connection
-        """
-        # Trigger connect callback if available
-        if (self._on_connect is not None):
-            asyncio.create_task(self._on_connect(channel, websocket))
-
     def register_route(self, router, path="/ws"):
         """
         Register this endpoint as a default websocket route on the given router
