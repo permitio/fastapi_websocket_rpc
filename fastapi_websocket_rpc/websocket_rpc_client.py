@@ -21,7 +21,7 @@ except ImportError:
     # Websocket-client optional module not installed.
     pass
 
-class ProxyEnabledWebSocketClientHandler (SimpleWebSocket):
+class ProxyEnabledWebSocketClientHandler(SimpleWebSocket):
     """
     Handler that use https://websocket-client.readthedocs.io/en/latest module.
     This implementation supports HTTP proxy, though HTTP_PROXY and HTTPS_PROXY environment variable.
@@ -93,7 +93,7 @@ class ProxyEnabledWebSocketClientHandler (SimpleWebSocket):
     async def close(self, code: int = 1000):
         if self._websocket is not None:
             # Case opened, we have something to close.
-            self._websocket.close(code)
+            await asyncio.get_event_loop().run_in_executor(None, self._websocket.close, code)
 
 class WebSocketsClientHandler(SimpleWebSocket):
     """
@@ -154,7 +154,7 @@ class WebSocketsClientHandler(SimpleWebSocket):
     async def close(self, code: int = 1000):
         if self._websocket is not None:
             # Case opened, we have something to close.
-            self._websocket.close(code)
+            await self._websocket.close(code)
 
 def isNotInvalidStatusCode(value):
     return not isinstance(value, InvalidStatusCode)
