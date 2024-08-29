@@ -16,7 +16,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="fastapi_websocket_rpc",
-    version="0.1.26",
+    version="0.1.27",
     author="Or Weis",
     author_email="or@permit.io",
     description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",
