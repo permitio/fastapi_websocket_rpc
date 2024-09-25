@@ -86,10 +86,13 @@ class WebsocketRPCEndpoint:
             channel.register_disconnect_handler(self._on_disconnect)
             # trigger connect handlers
             await channel.on_connect()
+            handlers = set()
             try:
                 while True:
                     data = await simple_websocket.recv()
-                    await channel.on_message(data)
+                    handlers.add(asyncio.create_task(channel.on_message(data)))
+                    to_remove = {h for h in handlers if h.done()}
+                    handlers -= to_remove
             except WebSocketDisconnect:
                 logger.info(
                     f"Client disconnected - {websocket.client.port} :: {channel.id}")
@@ -99,6 +102,10 @@ class WebsocketRPCEndpoint:
                 logger.info(
                     f"Client connection failed - {websocket.client.port} :: {channel.id}")
                 await self.handle_disconnect(websocket, channel)
+            finally:
+                for handler in handlers:
+                    handler.cancel()
+                await asyncio.gather(*handlers, return_exceptions=True)
         except:
             logger.exception(f"Failed to serve - {websocket.client.port}")
             self.manager.disconnect(websocket)

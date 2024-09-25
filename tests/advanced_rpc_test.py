@@ -65,3 +65,19 @@ async def test_recursive_rpc_calls(server):
         response = await client.other.get_response(call_id=remote_promise.result)
         # check the response we sent
         assert response.result['result'] == text
+
+
+@pytest.mark.asyncio
+async def test_simultaneous_rpc_calls_to_server(server):
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=10) as client:
+        start = time.monotonic()
+        await asyncio.gather(*(asyncio.create_task(client.other.wait(seconds=1)) for _ in range(3)))
+        end = time.monotonic()
+        assert end - start < 2
+
+
+@pytest.mark.asyncio
+async def test_simultaneous_rpc_calls_to_client(server):
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=10) as client:
+        time_taken = (await client.other.time_me(method="wait", args={"seconds": 1}, count=3)).result
+        assert time_taken < 2
