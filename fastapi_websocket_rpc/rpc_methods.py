@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+import time
 import typing
 import copy
 
@@ -97,3 +98,16 @@ class RpcUtilityMethods(RpcMethodsBase):
 
     async def echo(self, text: str) -> str:
         return text
+
+    async def wait(self, seconds: float) -> str:
+        await asyncio.sleep(seconds)
+        return "hello world"
+
+    async def time_me(self, method: str, args: dict, count: int) -> float:
+        tasks = set()
+        start = time.monotonic()
+        for i in range(count):
+            tasks.add(asyncio.create_task(self.channel.call(method, args=args)))
+        await asyncio.gather(*tasks)
+        end = time.monotonic()
+        return end - start

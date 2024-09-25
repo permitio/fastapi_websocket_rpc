@@ -327,6 +327,7 @@ class WebSocketRpcClient:
         """
         Read responses from socket worker
         """
+        handlers = set()
         try:
             while True:
                 raw_message = await self.ws.recv()
@@ -336,7 +337,9 @@ class WebSocketRpcClient:
                     await self.close()
                     break
                 else:
-                    await self.channel.on_message(raw_message)
+                    handlers.add(asyncio.create_task(self.channel.on_message(raw_message)))
+                    to_remove = {h for h in handlers if h.done()}
+                    handlers -= to_remove
         # Graceful external termination options
         # task was canceled
         except asyncio.CancelledError:
@@ -344,6 +347,10 @@ class WebSocketRpcClient:
         except Exception as err:
             logger.exception("RPC Reader task failed")
             raise
+        finally:
+            for handler in handlers:
+                handler.cancel()
+            await asyncio.gather(*handlers, return_exceptions=True)
 
     async def _keep_alive(self):
         try:
