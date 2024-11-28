@@ -1,2 +1,3 @@
 pytest
 pytest-asyncio
+uvicorn>=0.17.6,<1
