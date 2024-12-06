@@ -5,11 +5,7 @@ def get_requirements(env=""):
     if env:
         env = "-{}".format(env)
     with open("requirements{}.txt".format(env)) as fp:
-        requirements = [x.strip() for x in fp.read().split("\n") if not x.startswith("#")]
-    withWebsocketClient = os.environ.get("WITH_WEBSOCKET_CLIENT", "False")
-    if bool(withWebsocketClient):
-        requirements.append("websocket-client>=1.1.0")
-    return requirements
+        return [x.strip() for x in fp.read().split("\n") if not x.startswith("#")]
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -33,4 +29,7 @@ setup(
     ],
     python_requires=">=3.7",
     install_requires=get_requirements(),
+    extras_require={
+        "websocket-client": ["websocket-client>=1.1.0"],
+    },
 )
