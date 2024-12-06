@@ -27,7 +27,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     install_requires=get_requirements(),
     extras_require={
         "websocket-client": ["websocket-client>=1.1.0"],
