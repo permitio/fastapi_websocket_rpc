@@ -30,7 +30,7 @@ Method return values are sent back as RPC responses, which the other side can wa
 - As seen at <a href="https://www.youtube.com/watch?v=KP7tPeKhT3o" target="_blank">PyCon IL 2021</a> and <a href="https://www.youtube.com/watch?v=IuMZVWEUvGs" target="_blank">EuroPython 2021</a>
 
 
-Supports and tested on Python >= 3.7 
+Supports and tested on Python >= 3.9 
 ## Installation 🛠️
 ```
 pip install fastapi_websocket_rpc
@@ -157,7 +157,7 @@ logging_config.set_mode(LoggingModes.UVICORN)
 By default, fastapi-websocket-rpc uses websockets module as websocket client handler. This does not support HTTP(S) Proxy, see https://github.com/python-websockets/websockets/issues/364 . If the ability to use a proxy is important to, another websocket client implementation can be used, e.g. websocket-client (https://websocket-client.readthedocs.io). Here is how to use it. Installation:
 
 ```
-pip install websocket-client
+pip install fastapi_websocket_rpc[websocket-client]
 ```
 
 Then use websocket_client_handler_cls parameter:

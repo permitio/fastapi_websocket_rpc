@@ -1,7 +1,7 @@
 import os
 import sys
 
-from websockets.exceptions import InvalidStatusCode
+from websockets.exceptions import InvalidStatus
 
 from multiprocessing import Process
 
@@ -54,7 +54,7 @@ async def test_valid_token(server):
     """
     Test basic RPC with a simple echo
     """
-    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, extra_headers=[("X-TOKEN", SECRET_TOKEN)]) as client:
+    async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, additional_headers=[("X-TOKEN", SECRET_TOKEN)]) as client:
         text = "Hello World!"
         response = await client.other.echo(text=text)
         assert response.result == text
@@ -66,9 +66,9 @@ async def test_invalid_token(server):
     Test basic RPC with a simple echo
     """
     try:
-        async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, extra_headers=[("X-TOKEN", "bad-token")]) as client:
+        async with WebSocketRpcClient(uri, RpcUtilityMethods(), default_response_timeout=4, additional_headers=[("X-TOKEN", "bad-token")]) as client:
             assert client is not None
             # if we got here - the server didn't reject us
             assert False
-    except InvalidStatusCode as e:
-        assert e.status_code == 403
+    except InvalidStatus as e:
+        assert e.response.status_code == 403

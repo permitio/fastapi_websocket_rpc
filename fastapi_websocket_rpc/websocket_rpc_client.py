@@ -1,12 +1,9 @@
 import asyncio
 import logging
 from typing import Coroutine, Dict, List, Type
-from tenacity import retry, wait
-import tenacity
-from tenacity.retry import retry_if_exception
 
-import websockets
-from websockets.exceptions import InvalidStatusCode, WebSocketException, ConnectionClosedError, ConnectionClosedOK
+from tenacity import retry, RetryCallState, wait
+from tenacity.retry import retry_if_exception
 
 from .rpc_methods import PING_RESPONSE, RpcMethodsBase
 from .rpc_channel import RpcChannel, OnConnectCallback, OnDisconnectCallback
@@ -16,10 +13,15 @@ from .simplewebsocket import SimpleWebSocket, JsonSerializingWebSocket
 logger = get_logger("RPC_CLIENT")
 
 try:
+    import websockets
+except ImportError:
+    websockets = None
+
+try:
     import websocket
 except ImportError:
-    # Websocket-client optional module not installed.
-    pass
+    # Websocket-client optional module is not installed.
+    websocket = None
 
 class ProxyEnabledWebSocketClientHandler(SimpleWebSocket):
     """
@@ -33,6 +35,8 @@ class ProxyEnabledWebSocketClientHandler(SimpleWebSocket):
     Note: the connect timeout, if not specified, is the default socket connect timeout, which could be around 2min, so a bit longer than WebSocketsClientHandler.
     """
     def __init__(self):
+        if websocket is None:
+            raise RuntimeError("Proxy handler requires websocket-client library")
         self._websocket = None
 
     """
@@ -101,6 +105,8 @@ class WebSocketsClientHandler(SimpleWebSocket):
     This implementation does not support HTTP proxy (see https://github.com/python-websockets/websockets/issues/364).
     """
     def __init__(self):
+        if websockets is None:
+            raise RuntimeError("Default handler requires websockets library")
         self._websocket = None
 
     """
@@ -114,17 +120,17 @@ class WebSocketsClientHandler(SimpleWebSocket):
         except ConnectionRefusedError:
             logger.info("RPC connection was refused by server")
             raise
-        except ConnectionClosedError:
+        except websockets.ConnectionClosedError:
             logger.info("RPC connection lost")
             raise
-        except ConnectionClosedOK:
+        except websockets.ConnectionClosedOK:
             logger.info("RPC connection closed")
             raise
-        except InvalidStatusCode as err:
+        except websockets.InvalidStatusCode as err:
             logger.info(
                 f"RPC Websocket failed - with invalid status code {err.status_code}")
             raise
-        except WebSocketException as err:
+        except websockets.WebSocketException as err:
             logger.info(f"RPC Websocket failed - with {err}")
             raise
         except OSError as err:
@@ -156,16 +162,14 @@ class WebSocketsClientHandler(SimpleWebSocket):
             # Case opened, we have something to close.
             await self._websocket.close(code)
 
-def isNotInvalidStatusCode(value):
-    return not isinstance(value, InvalidStatusCode)
-
 
 def isNotForbbiden(value) -> bool:
     """
     Returns:
-        bool: Returns True as long as the given exception value is not InvalidStatusCode with 401 or 403
+        bool: Returns True as long as the given exception value doesn't hold HTTP status codes 401 or 403
     """
-    return not (isinstance(value, InvalidStatusCode) and (value.status_code == 401 or value.status_code == 403))
+    value = getattr(value, "response", value)  # `websockets.InvalidStatus` exception contains a status code inside the `response` property
+    return not (hasattr(value, "status_code") and value.status_code in (401, 403))
 
 
 class WebSocketRpcClient:
@@ -175,7 +179,7 @@ class WebSocketRpcClient:
     Exposes methods that the server can call
     """
 
-    def logerror(retry_state: tenacity.RetryCallState):
+    def logerror(retry_state: RetryCallState):
         logger.exception(retry_state.outcome.exception())
 
     DEFAULT_RETRY_CONFIG = {
