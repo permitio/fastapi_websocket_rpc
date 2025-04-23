@@ -2,4 +2,4 @@ fastapi>=0.78.0,<1
 packaging>=20.4
 pydantic>=1.9.1
 websockets>=10.3
-tenacity>=8.0.1,<9
+tenacity>=8.0.1
