@@ -3,3 +3,4 @@ packaging>=20.4
 pydantic>=1.9.1
 websockets>=10.3
 tenacity>=8.0.1,<9
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
