@@ -5,18 +5,14 @@ def get_requirements(env=""):
     if env:
         env = "-{}".format(env)
     with open("requirements{}.txt".format(env)) as fp:
-        requirements = [x.strip() for x in fp.read().split("\n") if not x.startswith("#")]
-    withWebsocketClient = os.environ.get("WITH_WEBSOCKET_CLIENT", "False")
-    if bool(withWebsocketClient):
-        requirements.append("websocket-client>=1.1.0")
-    return requirements
+        return [x.strip() for x in fp.read().split("\n") if not x.startswith("#")]
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name="fastapi_websocket_rpc",
-    version="0.1.25",
+    version="0.1.28",
     author="Or Weis",
     author_email="or@permit.io",
     description="A fast and durable bidirectional JSON RPC channel over Websockets and FastApi.",
@@ -31,6 +27,9 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     install_requires=get_requirements(),
+    extras_require={
+        "websocket-client": ["websocket-client>=1.1.0"],
+    },
 )
